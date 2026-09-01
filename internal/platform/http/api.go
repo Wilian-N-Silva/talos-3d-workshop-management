@@ -21,6 +21,15 @@ func NewAPIV1Router() *APIV1Router {
 }
 
 func newAPIV1Router(generator requestIDGenerator) *APIV1Router {
+	router := newJSONRouter()
+
+	return &APIV1Router{
+		router:  router,
+		handler: requestIDMiddleware(generator)(router),
+	}
+}
+
+func newJSONRouter() chi.Router {
 	router := chi.NewRouter()
 	router.NotFound(func(response http.ResponseWriter, _ *http.Request) {
 		WriteError(response, http.StatusNotFound, "route_not_found", "Route not found", nil)
@@ -32,10 +41,7 @@ func newAPIV1Router(generator requestIDGenerator) *APIV1Router {
 		WriteError(response, http.StatusMethodNotAllowed, "method_not_allowed", "Method not allowed", nil)
 	})
 
-	return &APIV1Router{
-		router:  router,
-		handler: requestIDMiddleware(generator)(router),
-	}
+	return router
 }
 
 // Handle registers a method-specific route relative to /api/v1.

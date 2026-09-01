@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"testing"
@@ -29,12 +31,12 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE users"); err != nil {
-		t.Fatalf("truncate users: %v", err)
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE bootstrap_state, users"); err != nil {
+		t.Fatalf("truncate user bootstrap tables: %v", err)
 	}
 
 	repository := NewUserRepository(database)
-	created, err := repository.Create(ctx, CreateUserParams{
+	created, err := repository.Create(ctx, auth.CreateUserParams{
 		Name:            "Workshop Owner",
 		EmailOrUsername: "owner@example.com",
 		PasswordHash:    "$argon2id$test-hash",
@@ -72,7 +74,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("found user = %#v, want ID %q", found, created.ID)
 	}
 
-	if _, err := repository.Create(ctx, CreateUserParams{
+	if _, err := repository.Create(ctx, auth.CreateUserParams{
 		Name:            "Duplicate Owner",
 		EmailOrUsername: "Owner@Example.com",
 		PasswordHash:    "$argon2id$other-test-hash",
@@ -81,7 +83,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatal("Create() duplicate login error = nil")
 	}
 
-	if _, err := repository.Create(ctx, CreateUserParams{
+	if _, err := repository.Create(ctx, auth.CreateUserParams{
 		Name:            "Invalid Status",
 		EmailOrUsername: "invalid-status",
 		PasswordHash:    "$argon2id$test-hash",
@@ -96,5 +98,70 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 	}
 	if count != 1 {
 		t.Fatalf("Count() = %d, want 1", count)
+	}
+	if needsSetup, err := repository.NeedsSetup(ctx); err != nil || needsSetup {
+		t.Fatalf("NeedsSetup() with existing user = %t, %v, want false", needsSetup, err)
+	}
+
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE bootstrap_state, users"); err != nil {
+		t.Fatalf("reset user bootstrap tables: %v", err)
+	}
+	if needsSetup, err := repository.NeedsSetup(ctx); err != nil || !needsSetup {
+		t.Fatalf("NeedsSetup() empty database = %t, %v, want true", needsSetup, err)
+	}
+
+	type creationResult struct {
+		user auth.User
+		err  error
+	}
+	const attempts = 8
+	start := make(chan struct{})
+	results := make(chan creationResult, attempts)
+	for index := range attempts {
+		go func() {
+			<-start
+			user, err := repository.CreateFirst(ctx, auth.CreateUserParams{
+				Name:            fmt.Sprintf("Owner %d", index),
+				EmailOrUsername: fmt.Sprintf("owner-%d", index),
+				PasswordHash:    "$argon2id$concurrent-test-hash",
+				Status:          auth.UserStatusActive,
+			})
+			results <- creationResult{user: user, err: err}
+		}()
+	}
+	close(start)
+
+	successes := 0
+	var initialOwnerID string
+	for range attempts {
+		result := <-results
+		switch {
+		case result.err == nil:
+			successes++
+			initialOwnerID = result.user.ID
+		case errors.Is(result.err, auth.ErrFirstUserAlreadyExists):
+		default:
+			t.Fatalf("CreateFirst() concurrent error = %v", result.err)
+		}
+	}
+	if successes != 1 {
+		t.Fatalf("CreateFirst() successes = %d, want 1", successes)
+	}
+	if needsSetup, err := repository.NeedsSetup(ctx); err != nil || needsSetup {
+		t.Fatalf("NeedsSetup() after creation = %t, %v, want false", needsSetup, err)
+	}
+	if count, err := repository.Count(ctx); err != nil || count != 1 {
+		t.Fatalf("Count() after concurrent creation = %d, %v, want 1", count, err)
+	}
+
+	var recordedOwnerID string
+	if err := database.QueryRowContext(ctx, "SELECT initial_owner_user_id FROM bootstrap_state").Scan(&recordedOwnerID); err != nil {
+		t.Fatalf("read bootstrap owner marker: %v", err)
+	}
+	if recordedOwnerID != initialOwnerID {
+		t.Fatalf("recorded initial owner ID = %q, want %q", recordedOwnerID, initialOwnerID)
+	}
+	if _, err := database.ExecContext(ctx, "DELETE FROM users WHERE id = $1", initialOwnerID); err == nil {
+		t.Fatal("deleting the recorded initial owner succeeded and could reopen bootstrap")
 	}
 }
