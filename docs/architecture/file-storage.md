@@ -20,5 +20,14 @@ metadata transaction completes. Product-level deletion must remove references
 according to retention rules instead of treating stored objects as mutable
 files.
 
-Filesystem layout and atomic-write behavior belong to the STOR-002
-infrastructure implementation.
+`LocalFilesystemStorage` implements the port below the configured server data
+directory. The physical layout is derived only from the SHA-256 digest:
+
+```text
+<data>/objects/<first two hex characters>/<full SHA-256 hex digest>
+```
+
+Writes are streamed to a same-filesystem staging directory, flushed, closed,
+and atomically published without replacing an existing path. Concurrent writes
+of identical content converge on the same object. If an existing object's bytes
+do not match its content address, the write fails instead of overwriting it.
