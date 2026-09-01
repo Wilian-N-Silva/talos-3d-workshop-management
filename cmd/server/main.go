@@ -39,6 +39,11 @@ func main() {
 	}
 	defer database.Close()
 
+	if err := postgres.Migrate(ctx, database); err != nil {
+		logger.Printf("server startup failed: %v", err)
+		os.Exit(1)
+	}
+
 	listener, err := net.Listen("tcp", serverConfig.ListenAddress())
 	if err != nil {
 		logger.Printf("server startup failed: %v", err)
