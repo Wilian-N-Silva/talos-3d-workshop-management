@@ -35,6 +35,11 @@ go vet ./...
 go build -o ./bin/server.exe ./cmd/server
 ```
 
+Testes de integração PostgreSQL usam `TALOS_TEST_DATABASE_URL` quando a
+variável está definida e são ignorados no desenvolvimento local quando ela
+não está. O CI sempre executa esses testes contra um serviço PostgreSQL 18
+descartável.
+
 Desktop frontend:
 
 ```powershell
