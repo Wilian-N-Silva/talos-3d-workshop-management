@@ -20,6 +20,11 @@ const (
 	defaultCurrency        = "BRL"
 	defaultTimezone        = "America/Sao_Paulo"
 	databaseURLEnvironment = "TALOS_DATABASE_URL"
+	defaultDBMaxOpenConns  = 10
+	defaultDBMaxIdleConns  = 5
+	defaultDBMaxLifetime   = 30 * time.Minute
+	defaultDBMaxIdleTime   = 5 * time.Minute
+	defaultDBPingTimeout   = 5 * time.Second
 )
 
 var (
@@ -29,14 +34,19 @@ var (
 
 // Config contains the server's process-level environment configuration.
 type Config struct {
-	ServerPort      int
-	DatabaseURL     string
-	DataDirectory   string
-	TrustedLAN      bool
-	UploadMaxBytes  int64
-	DefaultLocale   string
-	DefaultCurrency string
-	DefaultTimezone string
+	ServerPort                    int
+	DatabaseURL                   string
+	DatabaseMaxOpenConnections    int
+	DatabaseMaxIdleConnections    int
+	DatabaseConnectionMaxLifetime time.Duration
+	DatabaseConnectionMaxIdleTime time.Duration
+	DatabasePingTimeout           time.Duration
+	DataDirectory                 string
+	TrustedLAN                    bool
+	UploadMaxBytes                int64
+	DefaultLocale                 string
+	DefaultCurrency               string
+	DefaultTimezone               string
 }
 
 // Load reads and validates server configuration from the process environment.
@@ -58,6 +68,34 @@ func load(lookup environmentLookup) (Config, error) {
 	}
 
 	databaseURL, err := requiredPostgresURL(lookup)
+	if err != nil {
+		return Config{}, err
+	}
+
+	databaseMaxOpenConnections, err := integer(lookup, "TALOS_DB_MAX_OPEN_CONNS", defaultDBMaxOpenConns, 1, 1000)
+	if err != nil {
+		return Config{}, err
+	}
+
+	databaseMaxIdleConnections, err := integer(lookup, "TALOS_DB_MAX_IDLE_CONNS", defaultDBMaxIdleConns, 0, 1000)
+	if err != nil {
+		return Config{}, err
+	}
+	if databaseMaxIdleConnections > databaseMaxOpenConnections {
+		return Config{}, fmt.Errorf("TALOS_DB_MAX_IDLE_CONNS must not exceed TALOS_DB_MAX_OPEN_CONNS")
+	}
+
+	databaseConnectionMaxLifetime, err := duration(lookup, "TALOS_DB_CONN_MAX_LIFETIME", defaultDBMaxLifetime, 0)
+	if err != nil {
+		return Config{}, err
+	}
+
+	databaseConnectionMaxIdleTime, err := duration(lookup, "TALOS_DB_CONN_MAX_IDLE_TIME", defaultDBMaxIdleTime, 0)
+	if err != nil {
+		return Config{}, err
+	}
+
+	databasePingTimeout, err := duration(lookup, "TALOS_DB_PING_TIMEOUT", defaultDBPingTimeout, time.Millisecond)
 	if err != nil {
 		return Config{}, err
 	}
@@ -93,14 +131,19 @@ func load(lookup environmentLookup) (Config, error) {
 	}
 
 	return Config{
-		ServerPort:      serverPort,
-		DatabaseURL:     databaseURL,
-		DataDirectory:   filepath.Clean(dataDirectory),
-		TrustedLAN:      trustedLAN,
-		UploadMaxBytes:  uploadMaxBytes,
-		DefaultLocale:   locale,
-		DefaultCurrency: currency,
-		DefaultTimezone: timezone,
+		ServerPort:                    serverPort,
+		DatabaseURL:                   databaseURL,
+		DatabaseMaxOpenConnections:    databaseMaxOpenConnections,
+		DatabaseMaxIdleConnections:    databaseMaxIdleConnections,
+		DatabaseConnectionMaxLifetime: databaseConnectionMaxLifetime,
+		DatabaseConnectionMaxIdleTime: databaseConnectionMaxIdleTime,
+		DatabasePingTimeout:           databasePingTimeout,
+		DataDirectory:                 filepath.Clean(dataDirectory),
+		TrustedLAN:                    trustedLAN,
+		UploadMaxBytes:                uploadMaxBytes,
+		DefaultLocale:                 locale,
+		DefaultCurrency:               currency,
+		DefaultTimezone:               timezone,
 	}, nil
 }
 
@@ -144,6 +187,16 @@ func boolean(lookup environmentLookup, name string, fallback bool) (bool, error)
 	value, err := strconv.ParseBool(raw)
 	if err != nil {
 		return false, fmt.Errorf("%s must be a boolean", name)
+	}
+
+	return value, nil
+}
+
+func duration(lookup environmentLookup, name string, fallback, minimum time.Duration) (time.Duration, error) {
+	raw := valueOrDefault(lookup, name, fallback.String())
+	value, err := time.ParseDuration(raw)
+	if err != nil || value < minimum {
+		return 0, fmt.Errorf("%s must be a duration greater than or equal to %s", name, minimum)
 	}
 
 	return value, nil

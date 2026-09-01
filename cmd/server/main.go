@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
+	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/infrastructure/postgres"
 )
 
 const (
@@ -28,14 +29,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	database, err := postgres.Open(ctx, serverConfig)
+	if err != nil {
+		logger.Printf("server startup failed: %v", err)
+		os.Exit(1)
+	}
+	defer database.Close()
+
 	listener, err := net.Listen("tcp", serverConfig.ListenAddress())
 	if err != nil {
 		logger.Printf("server startup failed: %v", err)
 		os.Exit(1)
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	logger.Printf("server listening on %s", listener.Addr())
 	if err := run(ctx, listener, logger); err != nil {
