@@ -74,12 +74,25 @@ Requisitos:
 Executar localmente:
 
 ```powershell
-$env:TALOS_SERVER_ADDRESS = ":8080"
+$env:TALOS_DATABASE_URL = "postgres://talos:change-me@localhost:5432/talos?sslmode=disable"
 go run ./cmd/server
 ```
 
-`TALOS_SERVER_ADDRESS` é opcional e usa `:8080` por padrão. A configuração
-centralizada será implementada em `CFG-001`.
+Copie `.env.example` como referência e forneça os valores pelo ambiente do
+processo. O servidor não carrega arquivos `.env` automaticamente.
+
+| Variável | Obrigatória | Padrão |
+|---|---:|---|
+| `TALOS_SERVER_PORT` | não | `8080` |
+| `TALOS_DATABASE_URL` | sim | nenhum |
+| `TALOS_DATA_DIR` | não | `./data` |
+| `TALOS_TRUSTED_LAN` | não | `false` |
+| `TALOS_UPLOAD_MAX_BYTES` | não | `104857600` |
+| `TALOS_DEFAULT_LOCALE` | não | `pt-BR` |
+| `TALOS_DEFAULT_CURRENCY` | não | `BRL` |
+| `TALOS_DEFAULT_TIMEZONE` | não | `America/Sao_Paulo` |
+
+Nunca registre `TALOS_DATABASE_URL`, pois ela pode conter credenciais.
 
 
 ## Release 1.1 domain clarifications

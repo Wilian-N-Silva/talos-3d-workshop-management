@@ -9,20 +9,26 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
+
+	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
 )
 
 const (
-	defaultServerAddress = ":8080"
-	shutdownTimeout      = 5 * time.Second
+	shutdownTimeout = 5 * time.Second
 )
 
 func main() {
 	logger := log.New(os.Stdout, "", log.LstdFlags|log.LUTC)
 
-	listener, err := net.Listen("tcp", serverAddress())
+	serverConfig, err := config.Load()
+	if err != nil {
+		logger.Printf("invalid server configuration: %v", err)
+		os.Exit(1)
+	}
+
+	listener, err := net.Listen("tcp", serverConfig.ListenAddress())
 	if err != nil {
 		logger.Printf("server startup failed: %v", err)
 		os.Exit(1)
@@ -36,15 +42,6 @@ func main() {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
 	}
-}
-
-func serverAddress() string {
-	address := strings.TrimSpace(os.Getenv("TALOS_SERVER_ADDRESS"))
-	if address == "" {
-		return defaultServerAddress
-	}
-
-	return address
 }
 
 func newHandler() http.Handler {
