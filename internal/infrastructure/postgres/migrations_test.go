@@ -51,6 +51,9 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 	if _, err := database.ExecContext(ctx, "DROP TABLE IF EXISTS bootstrap_state"); err != nil {
 		t.Fatalf("reset bootstrap state schema: %v", err)
 	}
+	if _, err := database.ExecContext(ctx, "DROP TABLE IF EXISTS client_devices"); err != nil {
+		t.Fatalf("reset client devices schema: %v", err)
+	}
 	if _, err := database.ExecContext(ctx, "DROP TABLE IF EXISTS users"); err != nil {
 		t.Fatalf("reset users schema: %v", err)
 	}
@@ -62,14 +65,14 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetMigrationState() before migrate error = %v", err)
 	}
-	if state.CurrentVersion != 0 || state.TargetVersion != 3 || !state.HasPending {
-		t.Fatalf("state before migrate = %+v, want current 0, target 3, pending", state)
+	if state.CurrentVersion != 0 || state.TargetVersion != 4 || !state.HasPending {
+		t.Fatalf("state before migrate = %+v, want current 0, target 4, pending", state)
 	}
 
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	assertMigrationState(t, ctx, database, 3, 3, false)
+	assertMigrationState(t, ctx, database, 4, 4, false)
 
 	results := make(chan error, 2)
 	for range 2 {
@@ -95,18 +98,23 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read bootstrap state migration: %v", err)
 	}
+	clientDevices, err := fs.ReadFile(migrationfiles.Files, "00004_client_devices.sql")
+	if err != nil {
+		t.Fatalf("read client devices migration: %v", err)
+	}
 	failingMigrations := fstest.MapFS{
 		"00001_bootstrap.sql":       {Data: bootstrap},
 		"00002_users.sql":           {Data: users},
 		"00003_bootstrap_state.sql": {Data: bootstrapState},
-		"00004_failure.sql": {
+		"00004_client_devices.sql":  {Data: clientDevices},
+		"00005_failure.sql": {
 			Data: []byte("-- +goose Up\nSELECT * FROM table_that_does_not_exist;\n"),
 		},
 	}
 	if err := migrate(ctx, database, failingMigrations); err == nil {
 		t.Fatal("migrate() error = nil, want failing migration error")
 	}
-	assertMigrationState(t, ctx, database, 3, 3, false)
+	assertMigrationState(t, ctx, database, 4, 4, false)
 }
 
 func assertMigrationState(t *testing.T, ctx context.Context, database *sql.DB, current, target int64, pending bool) {
