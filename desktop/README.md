@@ -1,6 +1,38 @@
 # Desktop application
 
-This directory is reserved for the Windows Wails application and its React +
-TypeScript frontend.
+Windows desktop shell built with Wails 2.15, React, and strict TypeScript.
 
-`BOOT-003` will initialize the desktop shell with strict TypeScript enabled.
+## Prerequisites
+
+- Go 1.27 or newer compatible release;
+- Node.js 24 and npm 11 or compatible releases;
+- Wails CLI 2.15;
+- Microsoft Edge WebView2 Runtime.
+
+Run the Wails prerequisite check before the first build:
+
+```powershell
+wails doctor
+```
+
+## Live development
+
+From this directory:
+
+```powershell
+wails dev
+```
+
+This starts the Vite development server and opens the Windows desktop shell
+with hot reload.
+
+## Production build
+
+From this directory:
+
+```powershell
+wails build
+```
+
+The generated executable is written under `build/bin/`. Installer packaging is
+introduced by a later release task.
