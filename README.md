@@ -118,6 +118,25 @@ permite criar e remover um arquivo de teste. Caso contrário, retorna HTTP `503`
 com `{"status":"unavailable"}` sem expor detalhes internos. Estado de
 impressora não participa da readiness.
 
+### API v1
+
+Endpoints de produto são registrados sob `/api/v1`. Erros da API usam sempre
+`Content-Type: application/json` e o envelope:
+
+```json
+{
+  "error": {
+    "code": "route_not_found",
+    "message": "Route not found",
+    "details": {}
+  }
+}
+```
+
+Cada requisição da API recebe `X-Request-ID` na resposta e o mesmo valor no
+contexto do handler. Um identificador seguro enviado pelo cliente é preservado;
+valores ausentes ou inválidos são substituídos por um UUID aleatório.
+
 ### Servidor e PostgreSQL via Docker Compose
 
 O servidor e o PostgreSQL rodam juntos via Docker Compose. O banco permanece na

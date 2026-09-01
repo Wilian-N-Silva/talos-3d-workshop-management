@@ -79,6 +79,7 @@ func newHandler(readiness httpplatform.ReadinessChecker) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
 	httpplatform.RegisterReadiness(mux, readiness)
+	httpplatform.RegisterAPIV1(mux, httpplatform.NewAPIV1Router())
 
 	return mux
 }
