@@ -14,11 +14,13 @@ import (
 
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/infrastructure/postgres"
+	healthplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/health"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
 )
 
 const (
-	shutdownTimeout = 5 * time.Second
+	shutdownTimeout  = 5 * time.Second
+	readinessTimeout = 5 * time.Second
 )
 
 func main() {
@@ -44,6 +46,21 @@ func main() {
 		logger.Printf("server startup failed: %v", err)
 		os.Exit(1)
 	}
+	readiness := healthplatform.NewReadiness(
+		database.PingContext,
+		func(ctx context.Context) error {
+			state, err := postgres.GetMigrationState(ctx, database)
+			if err != nil {
+				return err
+			}
+			if !state.IsCurrent() {
+				return errors.New("database migrations are not current")
+			}
+			return nil
+		},
+		healthplatform.StorageDirectory(serverConfig.DataDirectory),
+		readinessTimeout,
+	)
 
 	listener, err := net.Listen("tcp", serverConfig.ListenAddress())
 	if err != nil {
@@ -52,22 +69,23 @@ func main() {
 	}
 
 	logger.Printf("server listening on %s", listener.Addr())
-	if err := run(ctx, listener, logger); err != nil {
+	if err := run(ctx, listener, logger, newHandler(readiness)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
 	}
 }
 
-func newHandler() http.Handler {
+func newHandler(readiness httpplatform.ReadinessChecker) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
+	httpplatform.RegisterReadiness(mux, readiness)
 
 	return mux
 }
 
-func run(ctx context.Context, listener net.Listener, logger *log.Logger) error {
+func run(ctx context.Context, listener net.Listener, logger *log.Logger, handler http.Handler) error {
 	server := &http.Server{
-		Handler:           newHandler(),
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

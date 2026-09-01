@@ -11,6 +11,26 @@ import (
 	migrationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/migrations"
 )
 
+func TestMigrationStateIsCurrent(t *testing.T) {
+	tests := []struct {
+		name  string
+		state MigrationState
+		want  bool
+	}{
+		{name: "current", state: MigrationState{CurrentVersion: 1, TargetVersion: 1}, want: true},
+		{name: "pending", state: MigrationState{CurrentVersion: 1, TargetVersion: 2, HasPending: true}},
+		{name: "version mismatch without pending flag", state: MigrationState{CurrentVersion: 1, TargetVersion: 2}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := test.state.IsCurrent(); got != test.want {
+				t.Fatalf("IsCurrent() = %t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
 func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 	databaseURL := os.Getenv("TALOS_TEST_DATABASE_URL")
 	if databaseURL == "" {

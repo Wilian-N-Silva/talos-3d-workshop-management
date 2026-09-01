@@ -110,7 +110,13 @@ enquanto o processo HTTP estiver vivo:
 
 Liveness não consulta PostgreSQL, migrations, file storage ou impressoras. Use
 esse endpoint apenas para detectar se o processo deve ser reiniciado; o estado
-das dependências será coberto por `GET /health/ready` em `OBS-002`.
+das dependências é exposto por `GET /health/ready`.
+
+Readiness retorna HTTP `200` com `{"status":"ok"}` quando PostgreSQL responde,
+as migrations estão na versão incorporada ao servidor e o diretório de storage
+permite criar e remover um arquivo de teste. Caso contrário, retorna HTTP `503`
+com `{"status":"unavailable"}` sem expor detalhes internos. Estado de
+impressora não participa da readiness.
 
 ### Servidor e PostgreSQL via Docker Compose
 
