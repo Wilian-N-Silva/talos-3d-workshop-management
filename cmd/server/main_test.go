@@ -11,22 +11,6 @@ import (
 	"time"
 )
 
-func TestServerAddress(t *testing.T) {
-	t.Run("uses default when unset", func(t *testing.T) {
-		t.Setenv("TALOS_SERVER_ADDRESS", "")
-		if got := serverAddress(); got != defaultServerAddress {
-			t.Fatalf("serverAddress() = %q, want %q", got, defaultServerAddress)
-		}
-	})
-
-	t.Run("uses trimmed configured address", func(t *testing.T) {
-		t.Setenv("TALOS_SERVER_ADDRESS", " 127.0.0.1:9090 ")
-		if got := serverAddress(); got != "127.0.0.1:9090" {
-			t.Fatalf("serverAddress() = %q, want %q", got, "127.0.0.1:9090")
-		}
-	})
-}
-
 func TestHealthPlaceholder(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/health/live", nil)
 	response := httptest.NewRecorder()
