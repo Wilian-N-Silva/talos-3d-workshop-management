@@ -1,0 +1,24 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data
+data/
+
+# Go build and test output
+bin/
+coverage.out
+*.test
+
+# Desktop/frontend dependencies and build output
+desktop/frontend/node_modules/
+desktop/frontend/dist/
+desktop/build/
+
+# Editor and operating-system files
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+.DS_Store
