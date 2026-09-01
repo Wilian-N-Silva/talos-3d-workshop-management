@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
+	domainauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
 )
 
@@ -26,15 +28,32 @@ var testMetadata = httpplatform.MetaResponse{
 	MinimumDesktopVersion: "0.0.0",
 }
 
+var testSetupService = setupServiceStub{needsSetup: true}
+
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
+}
+
+type setupServiceStub struct {
+	needsSetup bool
+}
+
+func (stub setupServiceStub) NeedsSetup(context.Context) (bool, error) {
+	return stub.needsSetup, nil
+}
+
+func (setupServiceStub) CreateAdmin(
+	context.Context,
+	applicationauth.CreateAdminInput,
+) (domainauth.User, error) {
+	return domainauth.User{}, nil
 }
 
 func TestHandlerRegistersLiveness(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/health/live", nil)
 	response := httptest.NewRecorder()
 
-	newHandler(readinessStub{err: errors.New("dependencies unavailable")}, testMetadata).ServeHTTP(response, request)
+	newHandler(readinessStub{err: errors.New("dependencies unavailable")}, testMetadata, testSetupService).ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
@@ -45,7 +64,7 @@ func TestHandlerRegistersReadiness(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/health/ready", nil)
 	response := httptest.NewRecorder()
 
-	newHandler(readinessStub{}, testMetadata).ServeHTTP(response, request)
+	newHandler(readinessStub{}, testMetadata, testSetupService).ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
@@ -56,7 +75,7 @@ func TestHandlerRegistersMeta(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.MetaPath, nil)
 	response := httptest.NewRecorder()
 
-	newHandler(readinessStub{}, testMetadata).ServeHTTP(response, request)
+	newHandler(readinessStub{}, testMetadata, testSetupService).ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
@@ -70,11 +89,31 @@ func TestHandlerRegistersMeta(t *testing.T) {
 	}
 }
 
+func TestHandlerRegistersSetupStatus(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.SetupPrefix+httpplatform.SetupStatusPath, nil)
+	response := httptest.NewRecorder()
+
+	newHandler(readinessStub{}, testMetadata, testSetupService).ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+	}
+	var got struct {
+		NeedsSetup bool `json:"needs_setup"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode setup status: %v", err)
+	}
+	if !got.NeedsSetup {
+		t.Fatal("needs_setup = false, want true")
+	}
+}
+
 func TestHandlerHasNoProductRoutes(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil)
 	response := httptest.NewRecorder()
 
-	newHandler(readinessStub{}, testMetadata).ServeHTTP(response, request)
+	newHandler(readinessStub{}, testMetadata, testSetupService).ServeHTTP(response, request)
 
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusNotFound)
@@ -96,7 +135,7 @@ func TestRunStopsWhenContextIsCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	result := make(chan error, 1)
 	go func() {
-		result <- run(ctx, listener, log.New(io.Discard, "", 0), newHandler(readinessStub{}, testMetadata))
+		result <- run(ctx, listener, log.New(io.Discard, "", 0), newHandler(readinessStub{}, testMetadata, testSetupService))
 	}()
 
 	client := &http.Client{Timeout: time.Second}

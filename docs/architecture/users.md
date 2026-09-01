@@ -21,3 +21,17 @@ Verification accepts only Argon2id version 19 and validates bounded memory,
 iteration, parallelism, salt, key, and encoded lengths before deriving a key.
 Malformed or resource-unsafe hashes fail closed. Roles and permissions are
 deliberately absent from the user record and remain RBAC-001 scope.
+
+## First-owner bootstrap
+
+Migration `00003_bootstrap_state.sql` adds a singleton completion record linked
+to the initial owner. `CreateFirst` acquires a PostgreSQL transaction-scoped
+advisory lock, rechecks both users and bootstrap state, inserts the user, and
+records completion in one transaction. Concurrent requests and separate server
+instances therefore cannot create multiple initial owners.
+
+The completion record is retained independently of future account status and
+prevents bootstrap from reopening. Databases that already contain users when
+the migration is applied are closed automatically and record their oldest user
+as the initial-owner marker. Concrete role-to-permission persistence remains
+RBAC-001 scope.

@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/infrastructure/postgres"
@@ -62,6 +63,15 @@ func main() {
 		healthplatform.StorageDirectory(serverConfig.DataDirectory),
 		readinessTimeout,
 	)
+	passwordService, err := applicationauth.NewPasswordService(applicationauth.DefaultPasswordParameters())
+	if err != nil {
+		logger.Printf("server startup failed: %v", err)
+		os.Exit(1)
+	}
+	bootstrapService := applicationauth.NewBootstrapService(
+		postgres.NewUserRepository(database),
+		passwordService,
+	)
 
 	listener, err := net.Listen("tcp", serverConfig.ListenAddress())
 	if err != nil {
@@ -77,16 +87,21 @@ func main() {
 	}
 
 	logger.Printf("server listening on %s", listener.Addr())
-	if err := run(ctx, listener, logger, newHandler(readiness, metadata)); err != nil {
+	if err := run(ctx, listener, logger, newHandler(readiness, metadata, bootstrapService)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
 	}
 }
 
-func newHandler(readiness httpplatform.ReadinessChecker, metadata httpplatform.MetaResponse) http.Handler {
+func newHandler(
+	readiness httpplatform.ReadinessChecker,
+	metadata httpplatform.MetaResponse,
+	setup httpplatform.SetupService,
+) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
 	httpplatform.RegisterReadiness(mux, readiness)
+	httpplatform.RegisterSetup(mux, setup)
 	apiRouter := httpplatform.NewAPIV1Router()
 	httpplatform.RegisterMeta(apiRouter, metadata)
 	httpplatform.RegisterAPIV1(mux, apiRouter)

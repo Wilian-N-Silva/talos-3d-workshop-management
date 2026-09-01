@@ -149,6 +149,18 @@ configurações da oficina, o nome vem de `TALOS_WORKSHOP_NAME`. Builds de relea
 podem definir a versão do servidor com o argumento Docker `SERVER_VERSION`;
 builds locais retornam `dev`.
 
+### Primeiro administrador
+
+`GET /api/setup/status` retorna `{"needs_setup":true}` somente enquanto nenhum
+usuário foi criado e o bootstrap nunca foi concluído. `POST /api/setup/admin`
+aceita `name`, `email_or_username` e `password`, cria o primeiro usuário ativo e
+fecha permanentemente o bootstrap. Tentativas posteriores retornam HTTP `409`
+com o código `setup_closed`.
+
+A senha inicial deve conter entre 15 e 1024 caracteres Unicode imprimíveis.
+Espaços e caracteres especiais são aceitos sem regras de composição. O servidor
+persiste somente o hash Argon2id; senha e hash nunca aparecem na resposta.
+
 ### Servidor e PostgreSQL via Docker Compose
 
 O servidor e o PostgreSQL rodam juntos via Docker Compose. O banco permanece na
