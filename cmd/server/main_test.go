@@ -51,6 +51,12 @@ func TestHandlerHasNoProductRoutes(t *testing.T) {
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusNotFound)
 	}
+	if got := response.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("Content-Type = %q, want application/json", got)
+	}
+	if response.Header().Get("X-Request-ID") == "" {
+		t.Fatal("X-Request-ID is empty")
+	}
 }
 
 func TestRunStopsWhenContextIsCancelled(t *testing.T) {

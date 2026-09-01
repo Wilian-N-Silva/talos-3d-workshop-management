@@ -3,6 +3,7 @@ module github.com/Wilian-N-Silva/talos-3d-workshop-management
 go 1.27.0
 
 require (
+	github.com/go-chi/chi/v5 v5.3.1
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/pressly/goose/v3 v3.27.3
 )
