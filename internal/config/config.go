@@ -19,6 +19,7 @@ const (
 	defaultLocale          = "pt-BR"
 	defaultCurrency        = "BRL"
 	defaultTimezone        = "America/Sao_Paulo"
+	defaultWorkshopName    = "Workshop"
 	databaseURLEnvironment = "TALOS_DATABASE_URL"
 	defaultDBMaxOpenConns  = 10
 	defaultDBMaxIdleConns  = 5
@@ -47,6 +48,7 @@ type Config struct {
 	DefaultLocale                 string
 	DefaultCurrency               string
 	DefaultTimezone               string
+	WorkshopName                  string
 }
 
 // Load reads and validates server configuration from the process environment.
@@ -130,6 +132,11 @@ func load(lookup environmentLookup) (Config, error) {
 		return Config{}, fmt.Errorf("TALOS_DEFAULT_TIMEZONE must be a valid IANA timezone")
 	}
 
+	workshopName := valueOrDefault(lookup, "TALOS_WORKSHOP_NAME", defaultWorkshopName)
+	if workshopName == "" {
+		return Config{}, fmt.Errorf("TALOS_WORKSHOP_NAME must not be empty")
+	}
+
 	return Config{
 		ServerPort:                    serverPort,
 		DatabaseURL:                   databaseURL,
@@ -144,6 +151,7 @@ func load(lookup environmentLookup) (Config, error) {
 		DefaultLocale:                 locale,
 		DefaultCurrency:               currency,
 		DefaultTimezone:               timezone,
+		WorkshopName:                  workshopName,
 	}, nil
 }
 

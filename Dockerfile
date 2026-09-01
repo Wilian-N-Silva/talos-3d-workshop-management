@@ -1,5 +1,7 @@
 FROM golang:1.27-alpine AS build
 
+ARG SERVER_VERSION=dev
+
 WORKDIR /src
 
 COPY go.mod go.sum ./
@@ -11,7 +13,7 @@ COPY migrations ./migrations
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -trimpath \
-    -ldflags="-s -w" \
+    -ldflags="-s -w -X github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo.ServerVersion=${SERVER_VERSION}" \
     -o /out/talos-server \
     ./cmd/server
 
