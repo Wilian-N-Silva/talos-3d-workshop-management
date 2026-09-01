@@ -1,0 +1,13 @@
+.git
+.github
+.agents
+.codex
+.env
+.env.*
+bin
+coverage.out
+data
+desktop
+docs
+scripts
+*.test
