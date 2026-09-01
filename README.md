@@ -99,11 +99,11 @@ processo. O servidor não carrega arquivos `.env` automaticamente.
 
 Nunca registre `TALOS_DATABASE_URL`, pois ela pode conter credenciais.
 
-### PostgreSQL via Docker Compose
+### Servidor e PostgreSQL via Docker Compose
 
-O PostgreSQL de desenvolvimento roda na rede interna do Compose e não publica
-a porta `5432` no host por padrão. Contêineres no mesmo projeto Compose acessam
-o banco pelo nome de serviço `postgres`:
+O servidor e o PostgreSQL rodam juntos via Docker Compose. O banco permanece na
+rede interna e não publica a porta `5432` no host. O servidor acessa o banco
+pelo nome de serviço `postgres`:
 
 ```text
 postgres:5432
@@ -118,14 +118,28 @@ docker compose up -d postgres
 docker compose ps
 ```
 
-Os dados persistem no volume nomeado `postgres_data`. Pare o serviço sem apagar
-o volume com `docker compose down`. Não use `docker compose down --volumes` a
-menos que queira apagar deliberadamente o banco local.
+Para iniciar a pilha completa, use:
 
-Até `DEP-002` adicionar o servidor ao Compose, uma execução do servidor
-diretamente no host precisa usar uma instância PostgreSQL separada que seja
-acessível pelo host. A configuração Compose padrão não enfraquece a fronteira
-de segurança publicando o banco apenas para esse fluxo temporário.
+```powershell
+docker compose up -d --build
+docker compose logs -f server
+```
+
+Por padrão, a API fica disponível apenas no host local em
+`http://127.0.0.1:8080`. Para disponibilizá-la na LAN confiável da oficina,
+defina simultaneamente no `.env`:
+
+```dotenv
+TALOS_SERVER_BIND_ADDRESS=0.0.0.0
+TALOS_TRUSTED_LAN=true
+```
+
+Não publique a API fora de uma LAN confiável sem antes adicionar TLS.
+
+O banco persiste em `postgres_data` e os objetos do servidor em `server_data`.
+Pare a pilha sem apagar os volumes com `docker compose down`. Não use
+`docker compose down --volumes` a menos que queira apagar deliberadamente todos
+os dados locais.
 
 
 ## Release 1.1 domain clarifications

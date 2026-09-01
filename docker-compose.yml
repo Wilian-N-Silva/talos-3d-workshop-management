@@ -1,4 +1,31 @@
 services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TALOS_DATABASE_URL: ${TALOS_DATABASE_URL:?copy .env.example to .env and set database credentials}
+      TALOS_DATA_DIR: /var/lib/talos
+      TALOS_DB_CONN_MAX_IDLE_TIME: ${TALOS_DB_CONN_MAX_IDLE_TIME:-5m}
+      TALOS_DB_CONN_MAX_LIFETIME: ${TALOS_DB_CONN_MAX_LIFETIME:-30m}
+      TALOS_DB_MAX_IDLE_CONNS: ${TALOS_DB_MAX_IDLE_CONNS:-5}
+      TALOS_DB_MAX_OPEN_CONNS: ${TALOS_DB_MAX_OPEN_CONNS:-10}
+      TALOS_DB_PING_TIMEOUT: ${TALOS_DB_PING_TIMEOUT:-5s}
+      TALOS_DEFAULT_CURRENCY: ${TALOS_DEFAULT_CURRENCY:-BRL}
+      TALOS_DEFAULT_LOCALE: ${TALOS_DEFAULT_LOCALE:-pt-BR}
+      TALOS_DEFAULT_TIMEZONE: ${TALOS_DEFAULT_TIMEZONE:-America/Sao_Paulo}
+      TALOS_SERVER_PORT: ${TALOS_SERVER_PORT:-8080}
+      TALOS_TRUSTED_LAN: ${TALOS_TRUSTED_LAN:-false}
+      TALOS_UPLOAD_MAX_BYTES: ${TALOS_UPLOAD_MAX_BYTES:-104857600}
+    ports:
+      - "${TALOS_SERVER_BIND_ADDRESS:-127.0.0.1}:${TALOS_SERVER_PORT:-8080}:${TALOS_SERVER_PORT:-8080}"
+    restart: unless-stopped
+    volumes:
+      - server_data:/var/lib/talos
+
   postgres:
     image: postgres:18-alpine
     environment:
@@ -21,3 +48,4 @@ services:
 
 volumes:
   postgres_data:
+  server_data:
