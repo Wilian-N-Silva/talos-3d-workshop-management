@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/infrastructure/postgres"
 	healthplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/health"
@@ -68,18 +69,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	metadata := httpplatform.MetaResponse{
+		APIVersion:            httpplatform.APIVersion,
+		ServerVersion:         buildinfo.ServerVersion,
+		WorkshopName:          serverConfig.WorkshopName,
+		MinimumDesktopVersion: buildinfo.MinimumDesktopVersion,
+	}
+
 	logger.Printf("server listening on %s", listener.Addr())
-	if err := run(ctx, listener, logger, newHandler(readiness)); err != nil {
+	if err := run(ctx, listener, logger, newHandler(readiness, metadata)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
 	}
 }
 
-func newHandler(readiness httpplatform.ReadinessChecker) http.Handler {
+func newHandler(readiness httpplatform.ReadinessChecker, metadata httpplatform.MetaResponse) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
 	httpplatform.RegisterReadiness(mux, readiness)
-	httpplatform.RegisterAPIV1(mux, httpplatform.NewAPIV1Router())
+	apiRouter := httpplatform.NewAPIV1Router()
+	httpplatform.RegisterMeta(apiRouter, metadata)
+	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux
 }

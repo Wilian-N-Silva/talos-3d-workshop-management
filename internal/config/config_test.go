@@ -38,6 +38,9 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if config.DefaultLocale != defaultLocale || config.DefaultCurrency != defaultCurrency || config.DefaultTimezone != defaultTimezone {
 		t.Fatal("localization defaults do not match the documented values")
 	}
+	if config.WorkshopName != defaultWorkshopName {
+		t.Fatalf("WorkshopName = %q, want %q", config.WorkshopName, defaultWorkshopName)
+	}
 }
 
 func TestLoadUsesConfiguredValues(t *testing.T) {
@@ -55,6 +58,7 @@ func TestLoadUsesConfiguredValues(t *testing.T) {
 		"TALOS_DEFAULT_LOCALE":        "en-US",
 		"TALOS_DEFAULT_CURRENCY":      "USD",
 		"TALOS_DEFAULT_TIMEZONE":      "UTC",
+		"TALOS_WORKSHOP_NAME":         "Prototype Lab",
 	}))
 	if err != nil {
 		t.Fatalf("load() error = %v", err)
@@ -74,6 +78,9 @@ func TestLoadUsesConfiguredValues(t *testing.T) {
 	}
 	if config.DefaultLocale != "en-US" || config.DefaultCurrency != "USD" || config.DefaultTimezone != "UTC" {
 		t.Fatal("configured localization values were not applied")
+	}
+	if config.WorkshopName != "Prototype Lab" {
+		t.Fatal("configured workshop name was not applied")
 	}
 }
 
@@ -96,6 +103,7 @@ func TestLoadRejectsInvalidValues(t *testing.T) {
 		{name: "invalid locale", values: withValue("TALOS_DEFAULT_LOCALE", "pt_br"), wantError: "TALOS_DEFAULT_LOCALE"},
 		{name: "invalid currency", values: withValue("TALOS_DEFAULT_CURRENCY", "brl"), wantError: "TALOS_DEFAULT_CURRENCY"},
 		{name: "invalid timezone", values: withValue("TALOS_DEFAULT_TIMEZONE", "Mars/Olympus"), wantError: "TALOS_DEFAULT_TIMEZONE"},
+		{name: "empty workshop name", values: withValue("TALOS_WORKSHOP_NAME", "  "), wantError: "TALOS_WORKSHOP_NAME"},
 	}
 
 	for _, test := range tests {

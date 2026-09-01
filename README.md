@@ -96,6 +96,7 @@ processo. O servidor não carrega arquivos `.env` automaticamente.
 | `TALOS_DEFAULT_LOCALE` | não | `pt-BR` |
 | `TALOS_DEFAULT_CURRENCY` | não | `BRL` |
 | `TALOS_DEFAULT_TIMEZONE` | não | `America/Sao_Paulo` |
+| `TALOS_WORKSHOP_NAME` | não | `Workshop` |
 
 Nunca registre `TALOS_DATABASE_URL`, pois ela pode conter credenciais.
 
@@ -136,6 +137,12 @@ Endpoints de produto são registrados sob `/api/v1`. Erros da API usam sempre
 Cada requisição da API recebe `X-Request-ID` na resposta e o mesmo valor no
 contexto do handler. Um identificador seguro enviado pelo cliente é preservado;
 valores ausentes ou inválidos são substituídos por um UUID aleatório.
+
+`GET /api/v1/meta` retorna `api_version`, `server_version`,
+`minimum_desktop_version` e `workshop_name`. Enquanto SET-001 não persistir as
+configurações da oficina, o nome vem de `TALOS_WORKSHOP_NAME`. Builds de release
+podem definir a versão do servidor com o argumento Docker `SERVER_VERSION`;
+builds locais retornam `dev`.
 
 ### Servidor e PostgreSQL via Docker Compose
 
