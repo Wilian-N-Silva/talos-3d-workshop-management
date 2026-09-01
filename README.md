@@ -10,8 +10,8 @@ O produto ainda não possui nome definitivo.
 
 ## Estado atual
 
-O repositório está na fase de bootstrap. O servidor Go mínimo existe; o
-desktop ainda será inicializado pela task `BOOT-003`.
+O repositório está na fase de bootstrap. O servidor Go mínimo e o shell
+desktop Wails estão disponíveis.
 
 ## Entradas de desenvolvimento
 
@@ -23,8 +23,36 @@ desktop ainda será inicializado pela task `BOOT-003`.
 - `docs/architecture/` — documentação da arquitetura;
 - `scripts/` — scripts operacionais e de desenvolvimento.
 
-Os comandos de build, teste e lint serão documentados em `BOOT-004`, depois
-que os projetos Go e Wails existirem.
+## Verificações padronizadas
+
+Execute os comandos a partir da raiz do repositório.
+
+Backend:
+
+```powershell
+go test ./...
+go vet ./...
+go build -o ./bin/server.exe ./cmd/server
+```
+
+Desktop frontend:
+
+```powershell
+npm.cmd --prefix ./desktop/frontend ci
+npm.cmd --prefix ./desktop/frontend run lint
+npm.cmd --prefix ./desktop/frontend run typecheck
+npm.cmd --prefix ./desktop/frontend run build
+```
+
+Desktop Windows completo:
+
+```powershell
+Push-Location ./desktop
+wails build
+Pop-Location
+```
+
+`BOOT-005` executará essas verificações automaticamente em pull requests.
 
 ### Servidor Go
 
