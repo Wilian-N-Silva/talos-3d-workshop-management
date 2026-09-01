@@ -54,6 +54,17 @@ Pop-Location
 
 `BOOT-005` executará essas verificações automaticamente em pull requests.
 
+## Integração contínua
+
+O workflow `.github/workflows/ci.yml` executa em pull requests e em pushes para
+`main`:
+
+- testes, race detector, lint e build do backend em Linux;
+- instalação limpa, lint, typecheck e build Wails do desktop no Windows.
+
+O workflow apenas valida o repositório. Ele não publica artefatos nem realiza
+deployment.
+
 ### Servidor Go
 
 Requisitos:
