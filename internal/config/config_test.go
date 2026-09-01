@@ -3,6 +3,7 @@ package config
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestLoadUsesDefaults(t *testing.T) {
@@ -22,6 +23,12 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if config.DataDirectory != "data" {
 		t.Fatalf("DataDirectory = %q, want data", config.DataDirectory)
 	}
+	if config.DatabaseMaxOpenConnections != defaultDBMaxOpenConns || config.DatabaseMaxIdleConnections != defaultDBMaxIdleConns {
+		t.Fatal("database pool count defaults do not match the documented values")
+	}
+	if config.DatabaseConnectionMaxLifetime != defaultDBMaxLifetime || config.DatabaseConnectionMaxIdleTime != defaultDBMaxIdleTime || config.DatabasePingTimeout != defaultDBPingTimeout {
+		t.Fatal("database pool duration defaults do not match the documented values")
+	}
 	if config.TrustedLAN {
 		t.Fatal("TrustedLAN = true, want false")
 	}
@@ -35,14 +42,19 @@ func TestLoadUsesDefaults(t *testing.T) {
 
 func TestLoadUsesConfiguredValues(t *testing.T) {
 	config, err := load(environment(map[string]string{
-		"TALOS_SERVER_PORT":      "9090",
-		databaseURLEnvironment:   "postgresql://talos:password@db:5432/workshop",
-		"TALOS_DATA_DIR":         "./workshop-data",
-		"TALOS_TRUSTED_LAN":      "true",
-		"TALOS_UPLOAD_MAX_BYTES": "2048",
-		"TALOS_DEFAULT_LOCALE":   "en-US",
-		"TALOS_DEFAULT_CURRENCY": "USD",
-		"TALOS_DEFAULT_TIMEZONE": "UTC",
+		"TALOS_SERVER_PORT":           "9090",
+		databaseURLEnvironment:        "postgresql://talos:password@db:5432/workshop",
+		"TALOS_DB_MAX_OPEN_CONNS":     "20",
+		"TALOS_DB_MAX_IDLE_CONNS":     "8",
+		"TALOS_DB_CONN_MAX_LIFETIME":  "1h",
+		"TALOS_DB_CONN_MAX_IDLE_TIME": "10m",
+		"TALOS_DB_PING_TIMEOUT":       "2s",
+		"TALOS_DATA_DIR":              "./workshop-data",
+		"TALOS_TRUSTED_LAN":           "true",
+		"TALOS_UPLOAD_MAX_BYTES":      "2048",
+		"TALOS_DEFAULT_LOCALE":        "en-US",
+		"TALOS_DEFAULT_CURRENCY":      "USD",
+		"TALOS_DEFAULT_TIMEZONE":      "UTC",
 	}))
 	if err != nil {
 		t.Fatalf("load() error = %v", err)
@@ -53,6 +65,12 @@ func TestLoadUsesConfiguredValues(t *testing.T) {
 	}
 	if config.DataDirectory != "workshop-data" || !config.TrustedLAN || config.UploadMaxBytes != 2048 {
 		t.Fatal("configured operational values were not applied")
+	}
+	if config.DatabaseMaxOpenConnections != 20 || config.DatabaseMaxIdleConnections != 8 {
+		t.Fatal("configured database pool counts were not applied")
+	}
+	if config.DatabaseConnectionMaxLifetime != time.Hour || config.DatabaseConnectionMaxIdleTime != 10*time.Minute || config.DatabasePingTimeout != 2*time.Second {
+		t.Fatal("configured database pool durations were not applied")
 	}
 	if config.DefaultLocale != "en-US" || config.DefaultCurrency != "USD" || config.DefaultTimezone != "UTC" {
 		t.Fatal("configured localization values were not applied")
@@ -68,6 +86,11 @@ func TestLoadRejectsInvalidValues(t *testing.T) {
 		{name: "missing database URL", values: map[string]string{}, wantError: "TALOS_DATABASE_URL is required"},
 		{name: "invalid port", values: validEnvironment("70000"), wantError: "TALOS_SERVER_PORT"},
 		{name: "invalid database scheme", values: map[string]string{databaseURLEnvironment: "mysql://db/talos"}, wantError: "valid PostgreSQL URL"},
+		{name: "invalid max open connections", values: withValue("TALOS_DB_MAX_OPEN_CONNS", "0"), wantError: "TALOS_DB_MAX_OPEN_CONNS"},
+		{name: "idle connections exceed open", values: withValues(map[string]string{"TALOS_DB_MAX_OPEN_CONNS": "2", "TALOS_DB_MAX_IDLE_CONNS": "3"}), wantError: "must not exceed"},
+		{name: "invalid connection lifetime", values: withValue("TALOS_DB_CONN_MAX_LIFETIME", "later"), wantError: "TALOS_DB_CONN_MAX_LIFETIME"},
+		{name: "invalid idle time", values: withValue("TALOS_DB_CONN_MAX_IDLE_TIME", "-1s"), wantError: "TALOS_DB_CONN_MAX_IDLE_TIME"},
+		{name: "invalid ping timeout", values: withValue("TALOS_DB_PING_TIMEOUT", "0s"), wantError: "TALOS_DB_PING_TIMEOUT"},
 		{name: "invalid trusted LAN", values: withValue("TALOS_TRUSTED_LAN", "sometimes"), wantError: "TALOS_TRUSTED_LAN must be a boolean"},
 		{name: "invalid upload size", values: withValue("TALOS_UPLOAD_MAX_BYTES", "0"), wantError: "TALOS_UPLOAD_MAX_BYTES"},
 		{name: "invalid locale", values: withValue("TALOS_DEFAULT_LOCALE", "pt_br"), wantError: "TALOS_DEFAULT_LOCALE"},
@@ -115,5 +138,13 @@ func validEnvironment(port string) map[string]string {
 func withValue(name, value string) map[string]string {
 	values := validEnvironment("8080")
 	values[name] = value
+	return values
+}
+
+func withValues(configured map[string]string) map[string]string {
+	values := validEnvironment("8080")
+	for name, value := range configured {
+		values[name] = value
+	}
 	return values
 }

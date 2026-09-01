@@ -85,6 +85,11 @@ processo. O servidor não carrega arquivos `.env` automaticamente.
 |---|---:|---|
 | `TALOS_SERVER_PORT` | não | `8080` |
 | `TALOS_DATABASE_URL` | sim | nenhum |
+| `TALOS_DB_MAX_OPEN_CONNS` | não | `10` |
+| `TALOS_DB_MAX_IDLE_CONNS` | não | `5` |
+| `TALOS_DB_CONN_MAX_LIFETIME` | não | `30m` |
+| `TALOS_DB_CONN_MAX_IDLE_TIME` | não | `5m` |
+| `TALOS_DB_PING_TIMEOUT` | não | `5s` |
 | `TALOS_DATA_DIR` | não | `./data` |
 | `TALOS_TRUSTED_LAN` | não | `false` |
 | `TALOS_UPLOAD_MAX_BYTES` | não | `104857600` |
