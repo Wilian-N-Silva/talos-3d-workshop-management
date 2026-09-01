@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 	"net"
@@ -11,11 +12,30 @@ import (
 	"time"
 )
 
+type readinessStub struct {
+	err error
+}
+
+func (stub readinessStub) Check(context.Context) error {
+	return stub.err
+}
+
 func TestHandlerRegistersLiveness(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/health/live", nil)
 	response := httptest.NewRecorder()
 
-	newHandler().ServeHTTP(response, request)
+	newHandler(readinessStub{err: errors.New("dependencies unavailable")}).ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+	}
+}
+
+func TestHandlerRegistersReadiness(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/health/ready", nil)
+	response := httptest.NewRecorder()
+
+	newHandler(readinessStub{}).ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
@@ -26,7 +46,7 @@ func TestHandlerHasNoProductRoutes(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil)
 	response := httptest.NewRecorder()
 
-	newHandler().ServeHTTP(response, request)
+	newHandler(readinessStub{}).ServeHTTP(response, request)
 
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusNotFound)
@@ -42,7 +62,7 @@ func TestRunStopsWhenContextIsCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	result := make(chan error, 1)
 	go func() {
-		result <- run(ctx, listener, log.New(io.Discard, "", 0))
+		result <- run(ctx, listener, log.New(io.Discard, "", 0), newHandler(readinessStub{}))
 	}()
 
 	client := &http.Client{Timeout: time.Second}

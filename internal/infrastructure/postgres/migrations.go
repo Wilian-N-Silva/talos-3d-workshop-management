@@ -21,6 +21,11 @@ type MigrationState struct {
 	HasPending     bool
 }
 
+// IsCurrent reports whether the database matches the embedded migration set.
+func (state MigrationState) IsCurrent() bool {
+	return !state.HasPending && state.CurrentVersion == state.TargetVersion
+}
+
 // Migrate applies all pending embedded migrations under a PostgreSQL advisory
 // lock. Failure prevents server startup.
 func Migrate(ctx context.Context, database *sql.DB) error {
