@@ -14,6 +14,7 @@ import (
 
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/infrastructure/postgres"
+	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
 )
 
 const (
@@ -59,11 +60,7 @@ func main() {
 
 func newHandler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("{\"status\":\"ok\"}\n"))
-	})
+	httpplatform.RegisterLiveness(mux)
 
 	return mux
 }
