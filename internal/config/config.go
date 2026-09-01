@@ -72,7 +72,7 @@ func load(lookup environmentLookup) (Config, error) {
 		return Config{}, err
 	}
 
-	databaseMaxOpenConnections, err := integer(lookup, "TALOS_DB_MAX_OPEN_CONNS", defaultDBMaxOpenConns, 1, 1000)
+	databaseMaxOpenConnections, err := integer(lookup, "TALOS_DB_MAX_OPEN_CONNS", defaultDBMaxOpenConns, 2, 1000)
 	if err != nil {
 		return Config{}, err
 	}

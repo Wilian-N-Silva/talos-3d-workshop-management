@@ -86,7 +86,7 @@ func TestLoadRejectsInvalidValues(t *testing.T) {
 		{name: "missing database URL", values: map[string]string{}, wantError: "TALOS_DATABASE_URL is required"},
 		{name: "invalid port", values: validEnvironment("70000"), wantError: "TALOS_SERVER_PORT"},
 		{name: "invalid database scheme", values: map[string]string{databaseURLEnvironment: "mysql://db/talos"}, wantError: "valid PostgreSQL URL"},
-		{name: "invalid max open connections", values: withValue("TALOS_DB_MAX_OPEN_CONNS", "0"), wantError: "TALOS_DB_MAX_OPEN_CONNS"},
+		{name: "invalid max open connections", values: withValue("TALOS_DB_MAX_OPEN_CONNS", "1"), wantError: "TALOS_DB_MAX_OPEN_CONNS"},
 		{name: "idle connections exceed open", values: withValues(map[string]string{"TALOS_DB_MAX_OPEN_CONNS": "2", "TALOS_DB_MAX_IDLE_CONNS": "3"}), wantError: "must not exceed"},
 		{name: "invalid connection lifetime", values: withValue("TALOS_DB_CONN_MAX_LIFETIME", "later"), wantError: "TALOS_DB_CONN_MAX_LIFETIME"},
 		{name: "invalid idle time", values: withValue("TALOS_DB_CONN_MAX_IDLE_TIME", "-1s"), wantError: "TALOS_DB_CONN_MAX_IDLE_TIME"},
