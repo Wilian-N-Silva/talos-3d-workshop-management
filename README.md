@@ -99,6 +99,19 @@ processo. O servidor não carrega arquivos `.env` automaticamente.
 
 Nunca registre `TALOS_DATABASE_URL`, pois ela pode conter credenciais.
 
+### Health
+
+`GET /health/live` responde sempre com HTTP `200` e o JSON estável abaixo
+enquanto o processo HTTP estiver vivo:
+
+```json
+{"status":"ok"}
+```
+
+Liveness não consulta PostgreSQL, migrations, file storage ou impressoras. Use
+esse endpoint apenas para detectar se o processo deve ser reiniciado; o estado
+das dependências será coberto por `GET /health/ready` em `OBS-002`.
+
 ### Servidor e PostgreSQL via Docker Compose
 
 O servidor e o PostgreSQL rodam juntos via Docker Compose. O banco permanece na

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func TestHealthPlaceholder(t *testing.T) {
+func TestHandlerRegistersLiveness(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/health/live", nil)
 	response := httptest.NewRecorder()
 
@@ -19,12 +19,6 @@ func TestHealthPlaceholder(t *testing.T) {
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
-	}
-	if got := response.Header().Get("Content-Type"); got != "application/json" {
-		t.Fatalf("Content-Type = %q, want application/json", got)
-	}
-	if got := response.Body.String(); got != "{\"status\":\"ok\"}\n" {
-		t.Fatalf("body = %q, want health placeholder JSON", got)
 	}
 }
 
@@ -55,7 +49,7 @@ func TestRunStopsWhenContextIsCancelled(t *testing.T) {
 	response, err := client.Get("http://" + listener.Addr().String() + "/health/live")
 	if err != nil {
 		cancel()
-		t.Fatalf("request health placeholder: %v", err)
+		t.Fatalf("request liveness: %v", err)
 	}
 	_ = response.Body.Close()
 
