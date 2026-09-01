@@ -1,0 +1,88 @@
+package main
+
+import (
+	"context"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+)
+
+func TestServerAddress(t *testing.T) {
+	t.Run("uses default when unset", func(t *testing.T) {
+		t.Setenv("TALOS_SERVER_ADDRESS", "")
+		if got := serverAddress(); got != defaultServerAddress {
+			t.Fatalf("serverAddress() = %q, want %q", got, defaultServerAddress)
+		}
+	})
+
+	t.Run("uses trimmed configured address", func(t *testing.T) {
+		t.Setenv("TALOS_SERVER_ADDRESS", " 127.0.0.1:9090 ")
+		if got := serverAddress(); got != "127.0.0.1:9090" {
+			t.Fatalf("serverAddress() = %q, want %q", got, "127.0.0.1:9090")
+		}
+	})
+}
+
+func TestHealthPlaceholder(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/health/live", nil)
+	response := httptest.NewRecorder()
+
+	newHandler().ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+	}
+	if got := response.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("Content-Type = %q, want application/json", got)
+	}
+	if got := response.Body.String(); got != "{\"status\":\"ok\"}\n" {
+		t.Fatalf("body = %q, want health placeholder JSON", got)
+	}
+}
+
+func TestHandlerHasNoProductRoutes(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil)
+	response := httptest.NewRecorder()
+
+	newHandler().ServeHTTP(response, request)
+
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusNotFound)
+	}
+}
+
+func TestRunStopsWhenContextIsCancelled(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	result := make(chan error, 1)
+	go func() {
+		result <- run(ctx, listener, log.New(io.Discard, "", 0))
+	}()
+
+	client := &http.Client{Timeout: time.Second}
+	response, err := client.Get("http://" + listener.Addr().String() + "/health/live")
+	if err != nil {
+		cancel()
+		t.Fatalf("request health placeholder: %v", err)
+	}
+	_ = response.Body.Close()
+
+	cancel()
+
+	select {
+	case err := <-result:
+		if err != nil {
+			t.Fatalf("run() error = %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("server did not stop after context cancellation")
+	}
+}

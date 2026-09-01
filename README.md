@@ -10,9 +10,8 @@ O produto ainda não possui nome definitivo.
 
 ## Estado atual
 
-O repositório está na fase de bootstrap. Os diretórios de entrada existem,
-mas o servidor e o desktop ainda serão inicializados pelas tasks `BOOT-002` e
-`BOOT-003`.
+O repositório está na fase de bootstrap. O servidor Go mínimo existe; o
+desktop ainda será inicializado pela task `BOOT-003`.
 
 ## Entradas de desenvolvimento
 
@@ -26,6 +25,22 @@ mas o servidor e o desktop ainda serão inicializados pelas tasks `BOOT-002` e
 
 Os comandos de build, teste e lint serão documentados em `BOOT-004`, depois
 que os projetos Go e Wails existirem.
+
+### Servidor Go
+
+Requisitos:
+
+- Go 1.27 ou superior compatível.
+
+Executar localmente:
+
+```powershell
+$env:TALOS_SERVER_ADDRESS = ":8080"
+go run ./cmd/server
+```
+
+`TALOS_SERVER_ADDRESS` é opcional e usa `:8080` por padrão. A configuração
+centralizada será implementada em `CFG-001`.
 
 
 ## Release 1.1 domain clarifications
