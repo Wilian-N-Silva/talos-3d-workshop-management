@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: 55e19a9
-last_reconciled_at_utc: 2026-09-02T12:28:26Z
+last_reconciled_commit: 6f9628d
+last_reconciled_at_utc: 2026-09-02T13:01:21Z
 reconciled_by: Codex
 ```
 
@@ -76,12 +76,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-AUTH-01
-title: Bearer Authentication & Access Control
-tasks: [AUTH-007, RBAC-001, RBAC-002]
-branch: work/wp-auth-01-access-control
-state: in_review
-pull_request: 23
+id: WP-AUTH-02
+title: Session Management
+tasks: [AUTH-008]
+branch: work/wp-auth-02-session-management
+state: in_progress
+pull_request: null
 ```
 
 Recommended `state` values:
@@ -101,7 +101,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
-| _Populate as packages are completed_ |  |  |  |
+| WP-AUTH-01 | AUTH-007, RBAC-001, RBAC-002 | 6f9628d (PR #23) | Bearer authentication and permission-based access control. |
 
 Keep this section lightweight. Older detail remains available through Git history and does not need to be duplicated forever.
 
@@ -111,7 +111,7 @@ Keep this section lightweight. Older detail remains available through Git histor
 
 | ID | Source | Description | Disposition |
 |---|---|---|---|
-| FUP-CFG-001 | reconciliation at 55e19a9 | Direct `go run` listener ignores `TALOS_SERVER_BIND_ADDRESS`/`TALOS_TRUSTED_LAN` and binds all interfaces; align listener policy with trusted-LAN security docs. | Future configuration/security Work Package; not expanded into WP-AUTH-01. |
+| FUP-CFG-001 | reconciliation at 55e19a9 | Direct `go run` listener ignores `TALOS_SERVER_BIND_ADDRESS`/`TALOS_TRUSTED_LAN` and binds all interfaces; align listener policy with trusted-LAN security docs. | Future configuration/security Work Package; not expanded into authentication packages. |
 
 Use this only for concrete follow-up work discovered during implementation/reconciliation. Do not turn it into a second product backlog.
 

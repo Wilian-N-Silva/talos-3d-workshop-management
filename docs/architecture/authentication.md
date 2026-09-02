@@ -22,3 +22,8 @@ keeps the audit timestamp useful without writing on every authenticated
 request. Authorization remains a separate layer and can be composed through
 `RequirePermission`, as documented in [Roles and permission
 authorization](authorization.md).
+
+Session listing and revocation are bearer-protected. Ownership permits users
+to manage their own sessions; management of another user's sessions requires
+the concrete `users.manage` permission. See [Desktop sessions](sessions.md) for
+the endpoint contract and response safety boundary.

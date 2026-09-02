@@ -21,6 +21,13 @@ type Session struct {
 	RevokedAt  *time.Time
 }
 
+// SessionDetails combines a session with the immutable identity and current
+// audit metadata of the desktop installation that owns it.
+type SessionDetails struct {
+	Session Session
+	Device  ClientDevice
+}
+
 // CreateSessionParams contains hash-only session data ready for persistence.
 type CreateSessionParams struct {
 	UserID    string

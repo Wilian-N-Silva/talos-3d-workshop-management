@@ -31,6 +31,8 @@ var testMetadata = httpplatform.MetaResponse{
 
 var testSetupService = setupServiceStub{needsSetup: true}
 var testLoginService = loginServiceStub{}
+var testAuthenticationService = authenticationServiceStub{}
+var testSessionManagementService = sessionManagementServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -42,11 +44,49 @@ type setupServiceStub struct {
 
 type loginServiceStub struct{}
 
+type authenticationServiceStub struct{}
+
+type sessionManagementServiceStub struct{}
+
 func (loginServiceStub) Login(
 	context.Context,
 	applicationauth.LoginInput,
 ) (applicationauth.LoginResult, error) {
 	return applicationauth.LoginResult{}, nil
+}
+
+func (authenticationServiceStub) Authenticate(
+	context.Context,
+	string,
+) (applicationauth.AuthenticationResult, error) {
+	return applicationauth.AuthenticationResult{
+		User: domainauth.User{
+			ID:     "11111111-1111-4111-8111-111111111111",
+			Status: domainauth.UserStatusActive,
+			Role:   domainauth.RoleViewer,
+		},
+		Session: domainauth.Session{
+			ID:        "33333333-3333-4333-8333-333333333333",
+			DeviceID:  "44444444-4444-4444-8444-444444444444",
+			ExpiresAt: time.Now().Add(time.Hour),
+		},
+	}, nil
+}
+
+func (sessionManagementServiceStub) List(
+	context.Context,
+	applicationauth.SessionActor,
+	string,
+) ([]domainauth.SessionDetails, error) {
+	return []domainauth.SessionDetails{}, nil
+}
+
+func (sessionManagementServiceStub) Revoke(
+	context.Context,
+	applicationauth.SessionActor,
+	string,
+) (domainauth.Session, error) {
+	return domainauth.Session{}, nil
 }
 
 func (stub setupServiceStub) NeedsSetup(context.Context) (bool, error) {
@@ -182,11 +222,31 @@ func TestHandlerRegistersLogin(t *testing.T) {
 	}
 }
 
+func TestHandlerRegistersSessionManagement(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.SessionsPath, nil)
+	request.Header.Set("Authorization", "Bearer test-token")
+	response := httptest.NewRecorder()
+
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+}
+
 func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.Handler {
 	t.Helper()
 	limiter, err := httpplatform.NewLoginRateLimiter(100, time.Minute)
 	if err != nil {
 		t.Fatalf("NewLoginRateLimiter() error = %v", err)
 	}
-	return newHandler(readiness, testMetadata, testSetupService, testLoginService, limiter)
+	return newHandler(
+		readiness,
+		testMetadata,
+		testSetupService,
+		testLoginService,
+		limiter,
+		testAuthenticationService,
+		testSessionManagementService,
+	)
 }

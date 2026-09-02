@@ -93,8 +93,11 @@ Bearer authentication rejects missing, malformed, expired, revoked, and
 disabled-user sessions uniformly. Last-used timestamps are throttled to avoid a
 write on every request. Product handlers authorize concrete permissions through
 five fixed Release 1 profiles: Owner, Operator, Designer, Commercial, and
-Viewer. Details are in `docs/architecture/authentication.md` and
-`docs/architecture/authorization.md`.
+Viewer. Authenticated users can list their device sessions at
+`GET /api/v1/auth/sessions` and revoke one with
+`POST /api/v1/auth/sessions/{session_id}/revoke`; cross-user management requires
+`users.manage`. Details are in `docs/architecture/authentication.md`,
+`docs/architecture/authorization.md`, and `docs/architecture/sessions.md`.
 
 ## Docker Compose development
 
