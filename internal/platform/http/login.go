@@ -45,11 +45,13 @@ type loginResponse struct {
 }
 
 type loginUserResponse struct {
-	ID              string                `json:"id"`
-	Name            string                `json:"name"`
-	EmailOrUsername string                `json:"email_or_username"`
-	Status          domainauth.UserStatus `json:"status"`
-	LastLoginAt     *time.Time            `json:"last_login_at"`
+	ID              string                  `json:"id"`
+	Name            string                  `json:"name"`
+	EmailOrUsername string                  `json:"email_or_username"`
+	Status          domainauth.UserStatus   `json:"status"`
+	Role            domainauth.Role         `json:"role"`
+	Permissions     []domainauth.Permission `json:"permissions"`
+	LastLoginAt     *time.Time              `json:"last_login_at"`
 }
 
 type loginDeviceResponse struct {
@@ -107,6 +109,8 @@ func RegisterLogin(router *APIV1Router, service LoginService, limiter *LoginRate
 				Name:            result.User.Name,
 				EmailOrUsername: result.User.EmailOrUsername,
 				Status:          result.User.Status,
+				Role:            result.User.Role,
+				Permissions:     domainauth.PermissionsForRole(result.User.Role),
 				LastLoginAt:     result.User.LastLoginAt,
 			},
 			Device: loginDeviceResponse{

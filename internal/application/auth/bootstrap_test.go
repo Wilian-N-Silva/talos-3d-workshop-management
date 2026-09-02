@@ -50,7 +50,7 @@ func TestBootstrapServiceCreatesHashedActiveOwner(t *testing.T) {
 	if repository.params.Name != "Workshop Owner" || repository.params.EmailOrUsername != "owner@example.com" {
 		t.Fatalf("normalized identity fields = %#v", repository.params)
 	}
-	if repository.params.PasswordHash != "$argon2id$test-hash" || repository.params.Status != domainauth.UserStatusActive {
+	if repository.params.PasswordHash != "$argon2id$test-hash" || repository.params.Status != domainauth.UserStatusActive || repository.params.Role != domainauth.RoleOwner {
 		t.Fatalf("persisted authentication fields = %#v", repository.params)
 	}
 }

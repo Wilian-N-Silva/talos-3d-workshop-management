@@ -42,6 +42,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 		EmailOrUsername: "owner@example.com",
 		PasswordHash:    "$argon2id$test-hash",
 		Status:          auth.UserStatusActive,
+		Role:            auth.RoleOwner,
 	})
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
@@ -54,7 +55,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 	if created.Name != "Workshop Owner" || created.EmailOrUsername != "owner@example.com" {
 		t.Fatalf("created user identity fields = %#v", created)
 	}
-	if created.PasswordHash != "$argon2id$test-hash" || created.Status != auth.UserStatusActive {
+	if created.PasswordHash != "$argon2id$test-hash" || created.Status != auth.UserStatusActive || created.Role != auth.RoleOwner {
 		t.Fatalf("created authentication fields = %#v", created)
 	}
 	if created.CreatedAt.IsZero() || created.UpdatedAt.IsZero() || created.UpdatedAt.Before(created.CreatedAt) {
@@ -99,6 +100,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 		EmailOrUsername: "Owner@Example.com",
 		PasswordHash:    "$argon2id$other-test-hash",
 		Status:          auth.UserStatusActive,
+		Role:            auth.RoleOwner,
 	}); err == nil {
 		t.Fatal("Create() duplicate login error = nil")
 	}
@@ -108,8 +110,19 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 		EmailOrUsername: "invalid-status",
 		PasswordHash:    "$argon2id$test-hash",
 		Status:          auth.UserStatus("pending"),
+		Role:            auth.RoleViewer,
 	}); err == nil {
 		t.Fatal("Create() invalid status error = nil")
+	}
+
+	if _, err := repository.Create(ctx, auth.CreateUserParams{
+		Name:            "Invalid Role",
+		EmailOrUsername: "invalid-role",
+		PasswordHash:    "$argon2id$test-hash",
+		Status:          auth.UserStatusActive,
+		Role:            auth.Role("superuser"),
+	}); err == nil {
+		t.Fatal("Create() invalid role error = nil")
 	}
 
 	count, err := repository.Count(ctx)
@@ -148,6 +161,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 				EmailOrUsername: fmt.Sprintf("owner-%d", index),
 				PasswordHash:    "$argon2id$concurrent-test-hash",
 				Status:          auth.UserStatusActive,
+				Role:            auth.RoleOwner,
 			})
 			results <- creationResult{user: user, err: err}
 		}()
@@ -183,6 +197,13 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 	}
 	if recordedOwnerID != initialOwnerID {
 		t.Fatalf("recorded initial owner ID = %q, want %q", recordedOwnerID, initialOwnerID)
+	}
+	var initialOwnerRole auth.Role
+	if err := database.QueryRowContext(ctx, "SELECT role FROM users WHERE id = $1", initialOwnerID).Scan(&initialOwnerRole); err != nil {
+		t.Fatalf("read initial owner role: %v", err)
+	}
+	if initialOwnerRole != auth.RoleOwner {
+		t.Fatalf("initial owner role = %q, want %q", initialOwnerRole, auth.RoleOwner)
 	}
 	if _, err := database.ExecContext(ctx, "DELETE FROM users WHERE id = $1", initialOwnerID); err == nil {
 		t.Fatal("deleting the recorded initial owner succeeded and could reopen bootstrap")

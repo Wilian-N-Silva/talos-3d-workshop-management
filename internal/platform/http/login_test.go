@@ -24,6 +24,7 @@ func TestLoginReturnsOpaqueSessionAndSafeMetadata(t *testing.T) {
 			EmailOrUsername: "owner@example.com",
 			PasswordHash:    "$argon2id$must-not-be-returned",
 			Status:          domainauth.UserStatusActive,
+			Role:            domainauth.RoleOwner,
 			LastLoginAt:     &loggedInAt,
 		},
 		Device: domainauth.ClientDevice{
@@ -63,7 +64,7 @@ func TestLoginReturnsOpaqueSessionAndSafeMetadata(t *testing.T) {
 	if got.Token != "opaque-session-token" || !got.ExpiresAt.Equal(expiresAt) {
 		t.Fatalf("session response = token %q, expiry %s", got.Token, got.ExpiresAt)
 	}
-	if got.User.ID != "user-id" || got.Device.ID != "device-id" {
+	if got.User.ID != "user-id" || got.User.Role != domainauth.RoleOwner || len(got.User.Permissions) != len(domainauth.AllPermissions()) || got.Device.ID != "device-id" {
 		t.Fatalf("login metadata = %#v", got)
 	}
 }

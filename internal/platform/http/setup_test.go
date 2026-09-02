@@ -54,6 +54,7 @@ func TestSetupAdminCreatesOwnerWithoutExposingPasswordHash(t *testing.T) {
 		EmailOrUsername: "owner@example.com",
 		PasswordHash:    "$argon2id$must-not-be-returned",
 		Status:          domainauth.UserStatusActive,
+		Role:            domainauth.RoleOwner,
 		CreatedAt:       createdAt,
 	}}
 	body := `{"name":"Workshop Owner","email_or_username":"owner@example.com","password":"a long owner passphrase"}`
@@ -73,7 +74,7 @@ func TestSetupAdminCreatesOwnerWithoutExposingPasswordHash(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &responseBody); err != nil {
 		t.Fatalf("decode created owner: %v", err)
 	}
-	if responseBody.User.ID != "owner-id" || responseBody.User.Status != domainauth.UserStatusActive {
+	if responseBody.User.ID != "owner-id" || responseBody.User.Status != domainauth.UserStatusActive || responseBody.User.Role != domainauth.RoleOwner || len(responseBody.User.Permissions) != len(domainauth.AllPermissions()) {
 		t.Fatalf("created owner response = %#v", responseBody)
 	}
 }

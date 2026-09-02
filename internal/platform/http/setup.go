@@ -40,11 +40,13 @@ type createdAdminResponse struct {
 }
 
 type createdAdmin struct {
-	ID              string                `json:"id"`
-	Name            string                `json:"name"`
-	EmailOrUsername string                `json:"email_or_username"`
-	Status          domainauth.UserStatus `json:"status"`
-	CreatedAt       time.Time             `json:"created_at"`
+	ID              string                  `json:"id"`
+	Name            string                  `json:"name"`
+	EmailOrUsername string                  `json:"email_or_username"`
+	Status          domainauth.UserStatus   `json:"status"`
+	Role            domainauth.Role         `json:"role"`
+	Permissions     []domainauth.Permission `json:"permissions"`
+	CreatedAt       time.Time               `json:"created_at"`
 }
 
 // RegisterSetup mounts the bootstrap API at the unversioned PRD-defined path.
@@ -100,6 +102,8 @@ func registerSetup(mux *http.ServeMux, service SetupService, generator requestID
 			Name:            user.Name,
 			EmailOrUsername: user.EmailOrUsername,
 			Status:          user.Status,
+			Role:            user.Role,
+			Permissions:     domainauth.PermissionsForRole(user.Role),
 			CreatedAt:       user.CreatedAt,
 		}})
 	})
