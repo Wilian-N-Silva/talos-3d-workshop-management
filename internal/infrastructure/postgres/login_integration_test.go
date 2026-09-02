@@ -58,6 +58,7 @@ func TestLoginFlowAgainstPostgreSQL(t *testing.T) {
 		EmailOrUsername: "owner@example.com",
 		PasswordHash:    passwordHash,
 		Status:          domainauth.UserStatusActive,
+		Role:            domainauth.RoleOwner,
 	})
 	if err != nil {
 		t.Fatalf("create login user: %v", err)

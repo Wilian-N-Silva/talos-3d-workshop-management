@@ -103,7 +103,7 @@ func (repository *UserRepository) FindByEmailOrUsername(
 ) (auth.User, error) {
 	row := repository.database.QueryRowContext(
 		ctx,
-		`SELECT id, name, email_or_username, password_hash, status,
+		`SELECT id, name, email_or_username, password_hash, status, role,
 		        created_at, updated_at, last_login_at
 		 FROM users
 		 WHERE lower(email_or_username) = lower($1)`,
@@ -132,7 +132,7 @@ func (repository *UserRepository) UpdateLastLogin(
 		 SET last_login_at = GREATEST(created_at, COALESCE(last_login_at, created_at), $2),
 		     updated_at = GREATEST(updated_at, $2)
 		 WHERE id = $1
-		 RETURNING id, name, email_or_username, password_hash, status,
+		 RETURNING id, name, email_or_username, password_hash, status, role,
 		           created_at, updated_at, last_login_at`,
 		id,
 		loggedInAt.UTC(),
@@ -166,14 +166,15 @@ type queryRower interface {
 func insertUser(ctx context.Context, database queryRower, params auth.CreateUserParams) (auth.User, error) {
 	return scanUser(database.QueryRowContext(
 		ctx,
-		`INSERT INTO users (name, email_or_username, password_hash, status)
-		 VALUES ($1, $2, $3, $4)
-		 RETURNING id, name, email_or_username, password_hash, status,
+		`INSERT INTO users (name, email_or_username, password_hash, status, role)
+		 VALUES ($1, $2, $3, $4, $5)
+		 RETURNING id, name, email_or_username, password_hash, status, role,
 		           created_at, updated_at, last_login_at`,
 		params.Name,
 		params.EmailOrUsername,
 		params.PasswordHash,
 		params.Status,
+		params.Role,
 	))
 }
 
@@ -186,6 +187,7 @@ func scanUser(row rowScanner) (auth.User, error) {
 		&user.EmailOrUsername,
 		&user.PasswordHash,
 		&user.Status,
+		&user.Role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 		&lastLoginAt,

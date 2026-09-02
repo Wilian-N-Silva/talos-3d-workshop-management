@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"errors"
 	"os"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -41,6 +43,7 @@ func TestSessionRepositoryAgainstPostgreSQL(t *testing.T) {
 		EmailOrUsername: "owner@example.com",
 		PasswordHash:    "$argon2id$test-hash",
 		Status:          auth.UserStatusActive,
+		Role:            auth.RoleOwner,
 	})
 	if err != nil {
 		t.Fatalf("create session user: %v", err)
@@ -94,6 +97,73 @@ func TestSessionRepositoryAgainstPostgreSQL(t *testing.T) {
 	}
 	if !bytes.Equal(storedHash, tokenHash[:]) || bytes.Equal(storedHash, []byte(plaintextToken)) {
 		t.Fatalf("stored token value = %x, want only SHA-256 hash", storedHash)
+	}
+
+	resolvedSession, resolvedUser, err := repository.FindByTokenHash(ctx, tokenHash[:])
+	if err != nil {
+		t.Fatalf("FindByTokenHash() error = %v", err)
+	}
+	if resolvedSession.ID != created.ID || resolvedUser.ID != user.ID || resolvedUser.PasswordHash != "$argon2id$test-hash" || resolvedUser.Role != auth.RoleOwner {
+		t.Fatalf("resolved session/user = %#v, %#v", resolvedSession, resolvedUser)
+	}
+	missingHash := sha256.Sum256([]byte("missing-token"))
+	if _, _, err := repository.FindByTokenHash(ctx, missingHash[:]); !errors.Is(err, auth.ErrSessionNotFound) {
+		t.Fatalf("FindByTokenHash() missing error = %v, want ErrSessionNotFound", err)
+	}
+
+	firstUsedAt := created.CreatedAt.Add(time.Minute)
+	updated, err := repository.UpdateLastUsed(ctx, created.ID, firstUsedAt, firstUsedAt.Add(-5*time.Minute))
+	if err != nil || !updated {
+		t.Fatalf("UpdateLastUsed() first = %t, %v, want true", updated, err)
+	}
+	secondUsedAt := firstUsedAt.Add(time.Minute)
+	updated, err = repository.UpdateLastUsed(ctx, created.ID, secondUsedAt, secondUsedAt.Add(-5*time.Minute))
+	if err != nil || updated {
+		t.Fatalf("UpdateLastUsed() throttled = %t, %v, want false", updated, err)
+	}
+
+	concurrentUsedAt := created.CreatedAt.Add(10 * time.Minute)
+	const attempts = 8
+	results := make(chan bool, attempts)
+	errorsFound := make(chan error, attempts)
+	var wait sync.WaitGroup
+	for range attempts {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			updated, err := repository.UpdateLastUsed(
+				ctx,
+				created.ID,
+				concurrentUsedAt,
+				concurrentUsedAt.Add(-5*time.Minute),
+			)
+			results <- updated
+			errorsFound <- err
+		}()
+	}
+	wait.Wait()
+	close(results)
+	close(errorsFound)
+	for err := range errorsFound {
+		if err != nil {
+			t.Fatalf("UpdateLastUsed() concurrent error = %v", err)
+		}
+	}
+	updates := 0
+	for didUpdate := range results {
+		if didUpdate {
+			updates++
+		}
+	}
+	if updates != 1 {
+		t.Fatalf("concurrent last-used updates = %d, want 1", updates)
+	}
+	resolvedSession, _, err = repository.FindByTokenHash(ctx, tokenHash[:])
+	if err != nil {
+		t.Fatalf("FindByTokenHash() after update error = %v", err)
+	}
+	if resolvedSession.LastUsedAt == nil || !resolvedSession.LastUsedAt.Equal(concurrentUsedAt) {
+		t.Fatalf("resolved LastUsedAt = %v, want %s", resolvedSession.LastUsedAt, concurrentUsedAt)
 	}
 
 	invalidDeviceHash := sha256.Sum256([]byte("invalid-device-token"))

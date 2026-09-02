@@ -104,6 +104,7 @@ func (service *BootstrapService) CreateAdmin(
 		EmailOrUsername: login,
 		PasswordHash:    passwordHash,
 		Status:          domainauth.UserStatusActive,
+		Role:            domainauth.RoleOwner,
 	})
 	if errors.Is(err, domainauth.ErrFirstUserAlreadyExists) {
 		return domainauth.User{}, ErrSetupClosed

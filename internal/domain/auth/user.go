@@ -27,6 +27,7 @@ type User struct {
 	EmailOrUsername string
 	PasswordHash    string
 	Status          UserStatus
+	Role            Role
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	LastLoginAt     *time.Time
@@ -38,4 +39,5 @@ type CreateUserParams struct {
 	EmailOrUsername string
 	PasswordHash    string
 	Status          UserStatus
+	Role            Role
 }

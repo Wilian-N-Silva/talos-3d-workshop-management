@@ -1,36 +1,125 @@
 # Implementation Tasks — Release 1
 
-> This file decomposes `PRD.md` into small tasks suitable for AI coding agents.
+> This file decomposes `PRD.md` into atomic implementation requirements suitable for AI coding agents.
 >
-> Each task should be assigned independently with its task section plus relevant PRD sections.
+> **Mini tasks are planning and verification units, not Git units.** Related tasks should normally be grouped into coherent Work Packages according to `GIT_WORKFLOW.md`.
 >
-> Tasks should not be merged into larger prompts unless explicitly necessary.
+> Progress is recorded in `IMPLEMENTATION_STATUS.md`, not by rewriting task definitions here.
+
+---
+
+# Task semantics
+
+Each task defines:
+
+- an atomic goal;
+- dependencies;
+- acceptance criteria.
+
+Tasks remain intentionally small because they:
+
+- reduce ambiguity for agents;
+- make missing requirements visible;
+- allow precise verification;
+- allow a Work Package to be split when it becomes too large;
+- support reliable progress reconciliation from repository evidence.
+
+They do **not** imply:
+
+```text
+1 task = 1 branch = 1 pull request
+```
+
+The default execution model is:
+
+```text
+Gate
+  ↓
+Work Package
+  ↓
+2..N related mini tasks as checklist
+  ↓
+1 branch
+  ↓
+1 pull request
+```
+
+---
+
+# Work Package rules
+
+When selecting work:
+
+```text
+[ ] reconcile repository state when continuing an existing implementation
+[ ] consult IMPLEMENTATION_STATUS.md, but verify stale/uncertain entries against code
+[ ] select tasks with satisfied dependencies or dependencies implementable inside the same package
+[ ] keep one primary capability/domain per Work Package
+[ ] prefer a reviewable vertical slice over microscopic PRs
+[ ] do not combine unrelated tasks merely to reduce PR count
+```
+
+Typical package sizing guidance:
+
+- bootstrap/config/straightforward CRUD: may group several tasks;
+- API + UI + tests for one capability: usually one package;
+- auth/security: smaller packages;
+- financial formulas: smaller packages;
+- schema/domain-critical work: moderate packages;
+- Bambu/protocol experimentation: very small packages/spikes.
+
+These are heuristics, not fixed numeric limits.
 
 ---
 
 # Task execution rules
 
-A task should ideally modify one concern.
-
-Before starting:
+Before starting a Work Package:
 
 ```text
 [ ] read AGENTS.md
-[ ] read task
-[ ] read referenced PRD sections
-[ ] inspect only relevant existing code
-[ ] identify dependencies
+[ ] read GIT_WORKFLOW.md
+[ ] read selected task sections
+[ ] read relevant PRD sections
+[ ] identify/verify dependencies
+[ ] inspect relevant existing code
+[ ] record selected Work Package in IMPLEMENTATION_STATUS.md
 ```
 
-Before finishing:
+During a Work Package:
 
 ```text
-[ ] acceptance criteria met
-[ ] tests run
-[ ] no unrelated refactor
+[ ] execute selected tasks sequentially without intermediate PRs
+[ ] use targeted tests/checks while iterating
+[ ] keep scope within the package capability
+[ ] report meaningful unrelated follow-ups instead of expanding scope
+```
+
+Before finishing a Work Package:
+
+```text
+[ ] all included acceptance criteria reviewed
+[ ] final required tests/checks run
+[ ] no unrelated broad refactor
 [ ] docs updated
+[ ] IMPLEMENTATION_STATUS.md reconciled/updated
 [ ] follow-ups reported
 ```
+
+---
+
+# Progress status
+
+Do not add completion marks to task headings in this file.
+
+Use `IMPLEMENTATION_STATUS.md` so that:
+
+- requirements remain stable;
+- progress can be regenerated/reconciled from repository evidence;
+- stale agent claims do not silently become specification truth;
+- the backlog does not accumulate merge noise from checkbox-only edits.
+
+A task should only be recorded as `verified_complete` when its acceptance criteria are evidenced in the repository.
 
 ---
 

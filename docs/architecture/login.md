@@ -9,8 +9,10 @@ generated dummy Argon2id hash to reduce account-enumeration timing differences.
 After credential verification, the service registers a client device or
 refreshes the metadata and last-seen time for an existing device ID. It then
 updates the user's last-login timestamp and issues an opaque session. The
-response contains safe user/device metadata, expiry, and the plaintext token;
-it never includes password hashes or token hashes.
+response contains safe user/device metadata, the user's fixed role and resolved
+permission list, expiry, and the plaintext token; it never includes password
+hashes or token hashes. The permission list supports client presentation only;
+the server remains authoritative for every protected operation.
 
 Login requests are limited per direct socket-peer IP using a concurrency-safe,
 bounded in-memory fixed window. Forwarding headers are deliberately ignored

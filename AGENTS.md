@@ -2,40 +2,119 @@
 
 ## Mission
 
-Implement the product defined in `PRD.md` using small, auditable tasks from `IMPLEMENTATION_TASKS.md`.
+Implement the product defined in `PRD.md` through coherent **Work Packages** composed from the atomic requirements in `IMPLEMENTATION_TASKS.md`.
 
-Optimize for correctness, maintainability, low context usage, and minimal unrelated change.
+Optimize for:
+
+- correctness;
+- maintainability;
+- low context/token usage;
+- minimal unrelated change;
+- verifiable progress;
+- a buildable `main` branch.
+
+A mini task is a planning/checklist unit. It is **not** automatically a branch or pull request.
 
 ---
 
 ## Source of truth
 
-Priority:
+Use the following precedence:
 
-1. active task;
-2. `PRD.md`;
-3. approved ADRs;
-4. this file;
-5. existing code.
+1. `PRD.md` and approved ADRs for product/architectural decisions;
+2. the active Work Package scope;
+3. acceptance criteria of the tasks included in that Work Package;
+4. this file and `GIT_WORKFLOW.md` for agent execution rules;
+5. existing code for implementation facts and established local conventions.
+
+`IMPLEMENTATION_STATUS.md` is **derived progress state**, not a requirements source. If it disagrees with the repository, reconcile it against repository evidence.
 
 Do not change a closed PRD decision without an ADR and approval.
 
 ---
 
-## Task discipline
+## Repository-first continuation
 
-For every task:
+Never assume the next task solely from conversation memory, a previous agent message, branch name, or an outdated status file.
 
-- implement only the requested scope;
-- do not perform broad refactors;
-- do not rename unrelated modules;
-- do not replace frameworks or libraries unless requested;
-- do not add speculative abstractions;
-- do not silently expand scope;
-- do not leave the repository broken;
-- document assumptions when unavoidable.
+When continuing an existing repository, first inspect the repository and reconcile actual implementation state as defined in `GIT_WORKFLOW.md`.
 
-If a task exposes a separate issue, record it as a follow-up task instead of solving it opportunistically.
+Completion must be supported by evidence such as:
+
+- migrations/schema;
+- implementation code;
+- routes/contracts;
+- tests;
+- configuration/documentation where required;
+- commits/PRs when available.
+
+A task ID in a commit or PR title is useful evidence, but it is not sufficient by itself if acceptance criteria are not actually present in the codebase.
+
+---
+
+## Work Package discipline
+
+A Work Package should deliver one coherent, reviewable capability.
+
+Typical characteristics:
+
+- one primary domain/capability;
+- usually 2–10 related mini tasks;
+- dependencies can be implemented sequentially in the same branch;
+- one branch;
+- one pull request;
+- one final full validation pass.
+
+Larger CRUD/foundation packages may contain more tasks when the change remains cohesive. Security, financial formulas, migrations with high impact, and empirical Bambu work should use smaller packages.
+
+Do not stop for approval between tasks inside an already approved/selected Work Package.
+
+---
+
+## Scope discipline
+
+Within an active Work Package:
+
+### Allowed
+
+- implement all listed tasks;
+- satisfy their acceptance criteria;
+- add/update tests;
+- add required migrations;
+- update directly affected documentation;
+- perform small local refactors required to implement the capability correctly;
+- fix small bugs directly caused by or blocking the Work Package;
+- reuse existing abstractions when appropriate.
+
+### Not allowed without stopping/escalating
+
+- change a closed PRD/ADR decision;
+- add or replace a structural framework/library without justification and approval;
+- cross into a different domain merely because it is convenient;
+- weaken security or validation;
+- perform unrelated broad refactors;
+- rename unrelated modules;
+- create speculative abstractions;
+- silently expand product scope.
+
+If unrelated work is discovered, record it as a follow-up instead of implementing it opportunistically.
+
+---
+
+## Stop conditions
+
+Stop and report a blocker before making the affected architectural change when completing the Work Package would require any of the following:
+
+- changing a closed architectural/product decision;
+- adding a major structural dependency/framework;
+- destructive or unexpected migration strategy;
+- weakening an authentication/authorization/security invariant;
+- creating a Server → Printer or Server → Desktop command path;
+- changing financial semantics/formulas not defined by the PRD;
+- expanding the package into another major domain;
+- resolving contradictory acceptance criteria by guessing.
+
+Continue with unaffected portions only when doing so does not create throwaway work.
 
 ---
 
@@ -134,7 +213,8 @@ Financial formulas require unit tests.
 ## Migrations
 
 - One-way numbered migrations.
-- Never edit a migration already considered released.
+- A migration may be refined while it exists only inside an unmerged Work Package branch.
+- Once merged to `main`, migration history is immutable; later changes require a new migration.
 - Fresh database must migrate to latest.
 - Migration failure must prevent readiness.
 - No schema mutation outside migrations.
@@ -143,17 +223,29 @@ Financial formulas require unit tests.
 
 ## Testing
 
-Backend task completion normally requires:
+During a Work Package, prefer targeted checks for the affected area so development does not repeatedly pay the cost of the full suite.
+
+Examples:
+
+```text
+go test ./internal/auth/...
+```
+
+or the equivalent focused desktop tests/checks.
+
+Before opening the Work Package PR, run the complete checks required for every affected application area.
+
+Backend final validation normally includes:
 
 ```text
 go test ./...
 ```
 
-and affected integration tests.
+plus configured lint/build checks and affected integration tests.
 
 Run race detector when concurrency is touched.
 
-Desktop task completion normally requires:
+Desktop final validation normally includes:
 
 ```text
 lint
@@ -167,9 +259,26 @@ Do not weaken assertions to make tests pass.
 
 ---
 
+## Progress tracking
+
+`IMPLEMENTATION_STATUS.md` must be updated as part of implementation work.
+
+Rules:
+
+- never mark a task completed merely because an agent says it is done;
+- mark completion only when its acceptance criteria are evidenced in the current repository state;
+- record concise evidence and the verified commit when practical;
+- record partial/blocking state when useful;
+- tasks absent from the status ledger are not automatically "not started"; they are simply unverified there;
+- after repository reconciliation, update stale entries before selecting new work.
+
+Do not create a separate PR solely to flip task status when the status change naturally belongs to a Work Package PR.
+
+---
+
 ## Documentation
 
-Update documentation when the task changes:
+Update documentation when the Work Package changes:
 
 - public behavior;
 - configuration;
@@ -184,7 +293,7 @@ Use ADRs only for meaningful architectural decisions, not minor implementation d
 
 ## Reuse of third-party code
 
-Daedalus and other MIT sources may be used selectively.
+Daedalus and other compatible sources may be used selectively.
 
 When copying or substantially adapting code:
 
@@ -200,15 +309,20 @@ Do not import upstream architecture merely to reuse one feature.
 
 ## Completion report
 
-At the end of a task, report:
+At the end of a Work Package, report:
 
 ```text
+Work Package
+Tasks completed/partial
 What changed
 Files changed
 Migrations
-Tests run
+Tests/checks run
+IMPLEMENTATION_STATUS.md updates
 Known limitations
 Follow-up tasks discovered
+Branch
+Pull request (if created)
 ```
 
-Do not claim tests passed unless they were actually run.
+Do not claim tests, CI, merge, or deployment succeeded unless they were actually executed/observed.
