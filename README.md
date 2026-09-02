@@ -50,6 +50,15 @@ npm.cmd --prefix ./desktop/frontend run typecheck
 npm.cmd --prefix ./desktop/frontend run build
 ```
 
+Desktop native layer:
+
+```powershell
+Push-Location ./desktop
+go test ./internal/...
+go vet ./internal/...
+Pop-Location
+```
+
 Complete Windows desktop:
 
 ```powershell
@@ -110,6 +119,13 @@ Users with `settings.manage` can upload a validated PNG/JPEG logo with
 `/api/v1/meta/logo`, which is safe for pre-login branding because it cannot
 address arbitrary files. Logo uploads are capped at 5 MiB or the lower
 configured upload limit.
+
+The Windows desktop starts with an editable server connection screen. It
+persists only a credential-free HTTP(S) base URL in the current user's config
+directory and tests the public `/api/v1/meta` contract through the native Go
+layer. React does not issue server HTTP requests. The connection test enforces
+an eight-second timeout and reports API or minimum-desktop-version
+incompatibility before login.
 
 ## Docker Compose development
 
