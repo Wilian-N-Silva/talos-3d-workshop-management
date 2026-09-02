@@ -80,7 +80,8 @@ id: WP-AUTH-01
 title: Bearer Authentication & Access Control
 tasks: [AUTH-007, RBAC-001, RBAC-002]
 branch: work/wp-auth-01-access-control
-state: ready_for_pr
+state: in_review
+pull_request: 23
 ```
 
 Recommended `state` values:
