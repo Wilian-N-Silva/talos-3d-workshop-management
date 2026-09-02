@@ -85,8 +85,8 @@ id: WP-SET-02
 title: Workshop Logo & File Foundation
 tasks: [FILE-001, SET-003]
 branch: work/wp-set-02-workshop-logo
-state: ready_for_pr
-pull_request: null
+state: in_review
+pull_request: 26
 ```
 
 Recommended `state` values:
