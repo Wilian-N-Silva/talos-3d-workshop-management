@@ -9,6 +9,9 @@ import (
 // ErrFirstUserAlreadyExists indicates that bootstrap has permanently closed.
 var ErrFirstUserAlreadyExists = errors.New("first user already exists")
 
+// ErrUserNotFound indicates that no persisted user matches a lookup.
+var ErrUserNotFound = errors.New("user not found")
+
 // UserStatus controls whether a persisted user may authenticate.
 type UserStatus string
 

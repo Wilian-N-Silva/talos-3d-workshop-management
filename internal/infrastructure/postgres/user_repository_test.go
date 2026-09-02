@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
 )
@@ -74,6 +75,25 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("found user = %#v, want ID %q", found, created.ID)
 	}
 
+	loggedInAt := created.CreatedAt.Add(time.Hour)
+	updated, err := repository.UpdateLastLogin(ctx, created.ID, loggedInAt)
+	if err != nil {
+		t.Fatalf("UpdateLastLogin() error = %v", err)
+	}
+	if updated.LastLoginAt == nil || !updated.LastLoginAt.Equal(loggedInAt) {
+		t.Fatalf("updated LastLoginAt = %v, want %s", updated.LastLoginAt, loggedInAt)
+	}
+	if _, err := repository.UpdateLastLogin(ctx, created.ID, created.CreatedAt.Add(time.Minute)); err != nil {
+		t.Fatalf("UpdateLastLogin() delayed error = %v", err)
+	}
+	refound, err := repository.FindByEmailOrUsername(ctx, created.EmailOrUsername)
+	if err != nil {
+		t.Fatalf("FindByEmailOrUsername() after update error = %v", err)
+	}
+	if refound.LastLoginAt == nil || !refound.LastLoginAt.Equal(loggedInAt) {
+		t.Fatalf("monotonic LastLoginAt = %v, want %s", refound.LastLoginAt, loggedInAt)
+	}
+
 	if _, err := repository.Create(ctx, auth.CreateUserParams{
 		Name:            "Duplicate Owner",
 		EmailOrUsername: "Owner@Example.com",
@@ -108,6 +128,9 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 	}
 	if needsSetup, err := repository.NeedsSetup(ctx); err != nil || !needsSetup {
 		t.Fatalf("NeedsSetup() empty database = %t, %v, want true", needsSetup, err)
+	}
+	if _, err := repository.FindByEmailOrUsername(ctx, "missing"); !errors.Is(err, auth.ErrUserNotFound) {
+		t.Fatalf("FindByEmailOrUsername() missing error = %v, want ErrUserNotFound", err)
 	}
 
 	type creationResult struct {

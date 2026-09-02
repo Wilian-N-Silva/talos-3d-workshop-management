@@ -29,6 +29,9 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if config.DatabaseConnectionMaxLifetime != defaultDBMaxLifetime || config.DatabaseConnectionMaxIdleTime != defaultDBMaxIdleTime || config.DatabasePingTimeout != defaultDBPingTimeout {
 		t.Fatal("database pool duration defaults do not match the documented values")
 	}
+	if config.SessionTTL != defaultSessionTTL || config.LoginRateLimitAttempts != defaultLoginAttempts || config.LoginRateLimitWindow != defaultLoginWindow {
+		t.Fatal("authentication defaults do not match the documented values")
+	}
 	if config.TrustedLAN {
 		t.Fatal("TrustedLAN = true, want false")
 	}
@@ -45,20 +48,23 @@ func TestLoadUsesDefaults(t *testing.T) {
 
 func TestLoadUsesConfiguredValues(t *testing.T) {
 	config, err := load(environment(map[string]string{
-		"TALOS_SERVER_PORT":           "9090",
-		databaseURLEnvironment:        "postgresql://talos:password@db:5432/workshop",
-		"TALOS_DB_MAX_OPEN_CONNS":     "20",
-		"TALOS_DB_MAX_IDLE_CONNS":     "8",
-		"TALOS_DB_CONN_MAX_LIFETIME":  "1h",
-		"TALOS_DB_CONN_MAX_IDLE_TIME": "10m",
-		"TALOS_DB_PING_TIMEOUT":       "2s",
-		"TALOS_DATA_DIR":              "./workshop-data",
-		"TALOS_TRUSTED_LAN":           "true",
-		"TALOS_UPLOAD_MAX_BYTES":      "2048",
-		"TALOS_DEFAULT_LOCALE":        "en-US",
-		"TALOS_DEFAULT_CURRENCY":      "USD",
-		"TALOS_DEFAULT_TIMEZONE":      "UTC",
-		"TALOS_WORKSHOP_NAME":         "Prototype Lab",
+		"TALOS_SERVER_PORT":               "9090",
+		databaseURLEnvironment:            "postgresql://talos:password@db:5432/workshop",
+		"TALOS_DB_MAX_OPEN_CONNS":         "20",
+		"TALOS_DB_MAX_IDLE_CONNS":         "8",
+		"TALOS_DB_CONN_MAX_LIFETIME":      "1h",
+		"TALOS_DB_CONN_MAX_IDLE_TIME":     "10m",
+		"TALOS_DB_PING_TIMEOUT":           "2s",
+		"TALOS_SESSION_TTL":               "168h",
+		"TALOS_LOGIN_RATE_LIMIT_ATTEMPTS": "8",
+		"TALOS_LOGIN_RATE_LIMIT_WINDOW":   "2m",
+		"TALOS_DATA_DIR":                  "./workshop-data",
+		"TALOS_TRUSTED_LAN":               "true",
+		"TALOS_UPLOAD_MAX_BYTES":          "2048",
+		"TALOS_DEFAULT_LOCALE":            "en-US",
+		"TALOS_DEFAULT_CURRENCY":          "USD",
+		"TALOS_DEFAULT_TIMEZONE":          "UTC",
+		"TALOS_WORKSHOP_NAME":             "Prototype Lab",
 	}))
 	if err != nil {
 		t.Fatalf("load() error = %v", err)
@@ -75,6 +81,9 @@ func TestLoadUsesConfiguredValues(t *testing.T) {
 	}
 	if config.DatabaseConnectionMaxLifetime != time.Hour || config.DatabaseConnectionMaxIdleTime != 10*time.Minute || config.DatabasePingTimeout != 2*time.Second {
 		t.Fatal("configured database pool durations were not applied")
+	}
+	if config.SessionTTL != 168*time.Hour || config.LoginRateLimitAttempts != 8 || config.LoginRateLimitWindow != 2*time.Minute {
+		t.Fatal("configured authentication values were not applied")
 	}
 	if config.DefaultLocale != "en-US" || config.DefaultCurrency != "USD" || config.DefaultTimezone != "UTC" {
 		t.Fatal("configured localization values were not applied")
@@ -98,6 +107,9 @@ func TestLoadRejectsInvalidValues(t *testing.T) {
 		{name: "invalid connection lifetime", values: withValue("TALOS_DB_CONN_MAX_LIFETIME", "later"), wantError: "TALOS_DB_CONN_MAX_LIFETIME"},
 		{name: "invalid idle time", values: withValue("TALOS_DB_CONN_MAX_IDLE_TIME", "-1s"), wantError: "TALOS_DB_CONN_MAX_IDLE_TIME"},
 		{name: "invalid ping timeout", values: withValue("TALOS_DB_PING_TIMEOUT", "0s"), wantError: "TALOS_DB_PING_TIMEOUT"},
+		{name: "invalid session TTL", values: withValue("TALOS_SESSION_TTL", "30s"), wantError: "TALOS_SESSION_TTL"},
+		{name: "invalid login attempts", values: withValue("TALOS_LOGIN_RATE_LIMIT_ATTEMPTS", "0"), wantError: "TALOS_LOGIN_RATE_LIMIT_ATTEMPTS"},
+		{name: "invalid login window", values: withValue("TALOS_LOGIN_RATE_LIMIT_WINDOW", "500ms"), wantError: "TALOS_LOGIN_RATE_LIMIT_WINDOW"},
 		{name: "invalid trusted LAN", values: withValue("TALOS_TRUSTED_LAN", "sometimes"), wantError: "TALOS_TRUSTED_LAN must be a boolean"},
 		{name: "invalid upload size", values: withValue("TALOS_UPLOAD_MAX_BYTES", "0"), wantError: "TALOS_UPLOAD_MAX_BYTES"},
 		{name: "invalid locale", values: withValue("TALOS_DEFAULT_LOCALE", "pt_br"), wantError: "TALOS_DEFAULT_LOCALE"},

@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"os"
 	"regexp"
@@ -85,8 +84,31 @@ func TestClientDeviceRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("delayed LastSeenAt = %s, want unchanged %s", delayed.LastSeenAt, observedAt)
 	}
 
-	if _, err := repository.FindByID(ctx, "00000000-0000-0000-0000-000000000000"); !errors.Is(err, sql.ErrNoRows) {
-		t.Fatalf("FindByID() missing error = %v, want sql.ErrNoRows", err)
+	loginAt := created.CreatedAt.Add(2 * time.Hour)
+	refreshed, err := repository.UpdateForLogin(ctx, created.ID, auth.CreateClientDeviceParams{
+		DisplayName: "Workshop Desktop",
+		OS:          "Windows 11 Pro",
+		AppVersion:  "1.1.0",
+	}, loginAt)
+	if err != nil {
+		t.Fatalf("UpdateForLogin() error = %v", err)
+	}
+	if refreshed.DisplayName != "Workshop Desktop" || refreshed.OS != "Windows 11 Pro" || refreshed.AppVersion != "1.1.0" {
+		t.Fatalf("refreshed device metadata = %#v", refreshed)
+	}
+	if !refreshed.LastSeenAt.Equal(loginAt) {
+		t.Fatalf("refreshed LastSeenAt = %s, want %s", refreshed.LastSeenAt, loginAt)
+	}
+
+	if _, err := repository.FindByID(ctx, "00000000-0000-0000-0000-000000000000"); !errors.Is(err, auth.ErrClientDeviceNotFound) {
+		t.Fatalf("FindByID() missing error = %v, want ErrClientDeviceNotFound", err)
+	}
+	if _, err := repository.UpdateForLogin(ctx, "00000000-0000-0000-0000-000000000000", auth.CreateClientDeviceParams{
+		DisplayName: "Missing",
+		OS:          "Windows",
+		AppVersion:  "1.0.0",
+	}, loginAt); !errors.Is(err, auth.ErrClientDeviceNotFound) {
+		t.Fatalf("UpdateForLogin() missing error = %v, want ErrClientDeviceNotFound", err)
 	}
 
 	invalidValues := []auth.CreateClientDeviceParams{
