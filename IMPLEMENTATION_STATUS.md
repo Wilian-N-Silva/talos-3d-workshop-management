@@ -87,8 +87,8 @@ id: WP-DESK-01
 title: Desktop Server Connection Foundation
 tasks: [DESK-001, DESK-002]
 branch: work/wp-desk-01-server-connection
-state: ready_for_pr
-pull_request: null
+state: in_review
+pull_request: 27
 ```
 
 Recommended `state` values:
