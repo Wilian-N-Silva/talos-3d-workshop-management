@@ -81,8 +81,8 @@ id: WP-AUTH-02
 title: Session Management
 tasks: [AUTH-008]
 branch: work/wp-auth-02-session-management
-state: ready_for_pr
-pull_request: null
+state: in_review
+pull_request: 24
 ```
 
 Recommended `state` values:
