@@ -31,7 +31,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE bootstrap_state, users"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE sessions, bootstrap_state, users"); err != nil {
 		t.Fatalf("truncate user bootstrap tables: %v", err)
 	}
 
@@ -103,7 +103,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("NeedsSetup() with existing user = %t, %v, want false", needsSetup, err)
 	}
 
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE bootstrap_state, users"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE sessions, bootstrap_state, users"); err != nil {
 		t.Fatalf("reset user bootstrap tables: %v", err)
 	}
 	if needsSetup, err := repository.NeedsSetup(ctx); err != nil || !needsSetup {
