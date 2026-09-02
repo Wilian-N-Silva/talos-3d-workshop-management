@@ -12,9 +12,13 @@ import (
 var assets embed.FS
 
 func main() {
-	app := NewApp()
+	app, err := NewApp()
+	if err != nil {
+		println("desktop startup failed:", err.Error())
+		return
+	}
 
-	err := wails.Run(&options.App{
+	err = wails.Run(&options.App{
 		Title:  "Gestão de Oficina 3D",
 		Width:  1024,
 		Height: 768,

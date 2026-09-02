@@ -82,6 +82,14 @@ jobs:
           go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
           Join-Path (go env GOPATH) "bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+      - name: Test native desktop
+        working-directory: desktop
+        run: go test . ./internal/...
+
+      - name: Vet native desktop
+        working-directory: desktop
+        run: go vet . ./internal/...
+
       - name: Install frontend dependencies
         working-directory: desktop/frontend
         run: npm ci

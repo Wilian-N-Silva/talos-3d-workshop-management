@@ -14,6 +14,7 @@ coverage.out
 # Desktop/frontend dependencies and build output
 desktop/frontend/node_modules/
 desktop/frontend/dist/
+desktop/frontend/wailsjs/go/
 desktop/build/
 
 # Editor and operating-system files

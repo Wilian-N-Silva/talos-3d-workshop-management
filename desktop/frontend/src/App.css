@@ -1,37 +1,183 @@
-.shell {
+.connection-page {
     align-items: center;
+    background:
+        radial-gradient(circle at 15% 15%, rgba(49, 137, 211, 0.22), transparent 38%),
+        linear-gradient(145deg, #111c2b 0%, #1b2636 55%, #172130 100%);
+    box-sizing: border-box;
     display: flex;
     justify-content: center;
     min-height: 100vh;
     padding: 32px;
 }
 
-.shell__card {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 16px;
+.connection-card {
+    background: rgba(23, 34, 49, 0.96);
+    border: 1px solid rgba(173, 205, 231, 0.18);
+    border-radius: 20px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
     box-sizing: border-box;
-    max-width: 560px;
-    padding: 48px;
+    max-width: 620px;
+    padding: 44px;
     text-align: left;
+    width: 100%;
 }
 
-.shell__eyebrow {
-    color: #a8d8ff;
-    font-size: 0.8rem;
+.connection-card__intro h1 {
+    font-size: clamp(1.75rem, 4vw, 2.3rem);
+    line-height: 1.15;
+    margin: 0 0 14px;
+}
+
+.connection-card__intro > p:last-child {
+    color: #c5d2df;
+    line-height: 1.55;
+    margin: 0 0 30px;
+}
+
+.connection-card__eyebrow {
+    color: #7fc7ff;
+    font-size: 0.78rem;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.13em;
     margin: 0 0 12px;
     text-transform: uppercase;
 }
 
-.shell h1 {
-    font-size: 2rem;
-    margin: 0 0 16px;
+.connection-card label {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin-bottom: 8px;
 }
 
-.shell p:last-child {
-    color: #d7e2ec;
-    line-height: 1.6;
+.connection-card input {
+    background: #0f1926;
+    border: 1px solid #4d6277;
+    border-radius: 10px;
+    box-sizing: border-box;
+    color: #f4f8fb;
+    font: inherit;
+    outline: none;
+    padding: 13px 14px;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+    width: 100%;
+}
+
+.connection-card input:focus {
+    border-color: #62b8f5;
+    box-shadow: 0 0 0 3px rgba(98, 184, 245, 0.2);
+}
+
+.connection-card input:disabled {
+    opacity: 0.62;
+}
+
+.connection-card__hint {
+    color: #93a6b8;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    margin: 9px 0 0;
+}
+
+.feedback {
+    border-radius: 9px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 20px 0 0;
+    padding: 11px 13px;
+}
+
+.feedback--success {
+    background: rgba(54, 179, 126, 0.14);
+    border: 1px solid rgba(83, 211, 157, 0.38);
+    color: #a8edcd;
+}
+
+.feedback--warning {
+    background: rgba(232, 169, 59, 0.14);
+    border: 1px solid rgba(232, 169, 59, 0.4);
+    color: #f3d393;
+}
+
+.feedback--error {
+    background: rgba(222, 82, 82, 0.14);
+    border: 1px solid rgba(237, 109, 109, 0.38);
+    color: #ffc0c0;
+}
+
+.server-summary {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 18px 0 0;
+}
+
+.server-summary div {
+    background: rgba(255, 255, 255, 0.045);
+    border-radius: 8px;
+    padding: 9px 10px;
+}
+
+.server-summary dt {
+    color: #8fa6b9;
+    font-size: 0.72rem;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.server-summary dd {
+    font-size: 0.88rem;
     margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.connection-card__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 28px;
+}
+
+.button {
+    border: 1px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    min-height: 42px;
+    padding: 10px 16px;
+}
+
+.button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.button--secondary {
+    background: transparent;
+    border-color: #536a80;
+    color: #e7eff6;
+}
+
+.button--primary {
+    background: #55adf0;
+    color: #0e1b28;
+}
+
+@media (max-width: 560px) {
+    .connection-page {
+        padding: 18px;
+    }
+
+    .connection-card {
+        padding: 28px 22px;
+    }
+
+    .connection-card__actions {
+        flex-direction: column;
+    }
+
+    .server-summary {
+        grid-template-columns: 1fr;
+    }
 }

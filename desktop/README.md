@@ -26,6 +26,18 @@ wails dev
 This starts the Vite development server and opens the Windows desktop shell
 with hot reload.
 
+## Server connection
+
+Before login, the desktop lets the user edit, test, and save the workshop
+server's HTTP(S) base URL. The value is normalized and written to
+`%AppData%\TalosWorkshopManagement\connection.json`; it is not a secret and
+contains no database or session credentials.
+
+React invokes Wails methods only. The native Go client calls
+`GET /api/v1/meta` with an eight-second timeout, maps remote errors, and checks
+both API version and the server's minimum desktop version. Authenticated and
+business endpoints are introduced by later Work Packages.
+
 ## Production build
 
 From this directory:
@@ -38,6 +50,13 @@ The generated executable is written under `build/bin/`. Installer packaging is
 introduced by a later release task.
 
 ## Quality checks
+
+From `desktop`:
+
+```powershell
+go test . ./internal/...
+go vet . ./internal/...
+```
 
 From `desktop/frontend` after `npm ci`:
 
