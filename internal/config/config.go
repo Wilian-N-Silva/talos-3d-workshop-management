@@ -26,6 +26,9 @@ const (
 	defaultDBMaxLifetime   = 30 * time.Minute
 	defaultDBMaxIdleTime   = 5 * time.Minute
 	defaultDBPingTimeout   = 5 * time.Second
+	defaultSessionTTL      = 30 * 24 * time.Hour
+	defaultLoginAttempts   = 5
+	defaultLoginWindow     = time.Minute
 )
 
 var (
@@ -42,6 +45,9 @@ type Config struct {
 	DatabaseConnectionMaxLifetime time.Duration
 	DatabaseConnectionMaxIdleTime time.Duration
 	DatabasePingTimeout           time.Duration
+	SessionTTL                    time.Duration
+	LoginRateLimitAttempts        int
+	LoginRateLimitWindow          time.Duration
 	DataDirectory                 string
 	TrustedLAN                    bool
 	UploadMaxBytes                int64
@@ -102,6 +108,21 @@ func load(lookup environmentLookup) (Config, error) {
 		return Config{}, err
 	}
 
+	sessionTTL, err := duration(lookup, "TALOS_SESSION_TTL", defaultSessionTTL, time.Minute)
+	if err != nil {
+		return Config{}, err
+	}
+
+	loginRateLimitAttempts, err := integer(lookup, "TALOS_LOGIN_RATE_LIMIT_ATTEMPTS", defaultLoginAttempts, 1, 1000)
+	if err != nil {
+		return Config{}, err
+	}
+
+	loginRateLimitWindow, err := duration(lookup, "TALOS_LOGIN_RATE_LIMIT_WINDOW", defaultLoginWindow, time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+
 	dataDirectory := valueOrDefault(lookup, "TALOS_DATA_DIR", defaultDataDirectory)
 	if dataDirectory == "" {
 		return Config{}, fmt.Errorf("TALOS_DATA_DIR must not be empty")
@@ -145,6 +166,9 @@ func load(lookup environmentLookup) (Config, error) {
 		DatabaseConnectionMaxLifetime: databaseConnectionMaxLifetime,
 		DatabaseConnectionMaxIdleTime: databaseConnectionMaxIdleTime,
 		DatabasePingTimeout:           databasePingTimeout,
+		SessionTTL:                    sessionTTL,
+		LoginRateLimitAttempts:        loginRateLimitAttempts,
+		LoginRateLimitWindow:          loginRateLimitWindow,
 		DataDirectory:                 filepath.Clean(dataDirectory),
 		TrustedLAN:                    trustedLAN,
 		UploadMaxBytes:                uploadMaxBytes,

@@ -95,6 +95,9 @@ processo. O servidor não carrega arquivos `.env` automaticamente.
 | `TALOS_DB_CONN_MAX_LIFETIME` | não | `30m` |
 | `TALOS_DB_CONN_MAX_IDLE_TIME` | não | `5m` |
 | `TALOS_DB_PING_TIMEOUT` | não | `5s` |
+| `TALOS_SESSION_TTL` | não | `720h` |
+| `TALOS_LOGIN_RATE_LIMIT_ATTEMPTS` | não | `5` |
+| `TALOS_LOGIN_RATE_LIMIT_WINDOW` | não | `1m` |
 | `TALOS_DATA_DIR` | não | `./data` |
 | `TALOS_TRUSTED_LAN` | não | `false` |
 | `TALOS_UPLOAD_MAX_BYTES` | não | `104857600` |
@@ -160,6 +163,20 @@ com o código `setup_closed`.
 A senha inicial deve conter entre 15 e 1024 caracteres Unicode imprimíveis.
 Espaços e caracteres especiais são aceitos sem regras de composição. O servidor
 persiste somente o hash Argon2id; senha e hash nunca aparecem na resposta.
+
+### Login desktop
+
+`POST /api/v1/auth/login` aceita `email_or_username`, `password` e um objeto
+`device` com `display_name`, `os`, `app_version` e um `id` opcional. O primeiro
+login sem `device.id` registra a instalação; o cliente deve reutilizar o ID
+retornado nos logins seguintes para atualizar o mesmo registro de auditoria.
+
+Uma resposta bem-sucedida retorna o token opaco somente uma vez, sua expiração
+e metadados seguros do usuário e do dispositivo. Credenciais desconhecidas,
+senhas incorretas e contas desabilitadas retornam o mesmo erro
+`invalid_credentials`. Por padrão, tokens duram 30 dias e cada endereço de peer
+direto pode fazer cinco tentativas por minuto. Respostas limitadas usam HTTP
+`429` e incluem `Retry-After`; cabeçalhos de proxy não alteram a chave do limite.
 
 ### Servidor e PostgreSQL via Docker Compose
 

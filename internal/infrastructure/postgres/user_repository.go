@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
 )
@@ -110,8 +111,37 @@ func (repository *UserRepository) FindByEmailOrUsername(
 	)
 
 	user, err := scanUser(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return auth.User{}, auth.ErrUserNotFound
+	}
 	if err != nil {
 		return auth.User{}, fmt.Errorf("find user by login identifier: %w", err)
+	}
+	return user, nil
+}
+
+// UpdateLastLogin records successful credential authentication monotonically.
+func (repository *UserRepository) UpdateLastLogin(
+	ctx context.Context,
+	id string,
+	loggedInAt time.Time,
+) (auth.User, error) {
+	user, err := scanUser(repository.database.QueryRowContext(
+		ctx,
+		`UPDATE users
+		 SET last_login_at = GREATEST(created_at, COALESCE(last_login_at, created_at), $2),
+		     updated_at = GREATEST(updated_at, $2)
+		 WHERE id = $1
+		 RETURNING id, name, email_or_username, password_hash, status,
+		           created_at, updated_at, last_login_at`,
+		id,
+		loggedInAt.UTC(),
+	))
+	if errors.Is(err, sql.ErrNoRows) {
+		return auth.User{}, auth.ErrUserNotFound
+	}
+	if err != nil {
+		return auth.User{}, fmt.Errorf("update user last login: %w", err)
 	}
 	return user, nil
 }

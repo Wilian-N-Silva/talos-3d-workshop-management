@@ -68,10 +68,36 @@ func main() {
 		logger.Printf("server startup failed: %v", err)
 		os.Exit(1)
 	}
-	bootstrapService := applicationauth.NewBootstrapService(
-		postgres.NewUserRepository(database),
+	userRepository := postgres.NewUserRepository(database)
+	bootstrapService := applicationauth.NewBootstrapService(userRepository, passwordService)
+	dummyPassword := []byte("invalid login timing equalization")
+	dummyPasswordHash, err := passwordService.Hash(dummyPassword)
+	clear(dummyPassword)
+	if err != nil {
+		logger.Printf("server startup failed: initialize login verification: %v", err)
+		os.Exit(1)
+	}
+	sessionService := applicationauth.NewSessionService(postgres.NewSessionRepository(database))
+	loginService, err := applicationauth.NewLoginService(
+		userRepository,
+		postgres.NewClientDeviceRepository(database),
+		sessionService,
 		passwordService,
+		dummyPasswordHash,
+		serverConfig.SessionTTL,
 	)
+	if err != nil {
+		logger.Printf("server startup failed: initialize login service: %v", err)
+		os.Exit(1)
+	}
+	loginRateLimiter, err := httpplatform.NewLoginRateLimiter(
+		serverConfig.LoginRateLimitAttempts,
+		serverConfig.LoginRateLimitWindow,
+	)
+	if err != nil {
+		logger.Printf("server startup failed: initialize login rate limit: %v", err)
+		os.Exit(1)
+	}
 
 	listener, err := net.Listen("tcp", serverConfig.ListenAddress())
 	if err != nil {
@@ -87,7 +113,7 @@ func main() {
 	}
 
 	logger.Printf("server listening on %s", listener.Addr())
-	if err := run(ctx, listener, logger, newHandler(readiness, metadata, bootstrapService)); err != nil {
+	if err := run(ctx, listener, logger, newHandler(readiness, metadata, bootstrapService, loginService, loginRateLimiter)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
 	}
@@ -97,6 +123,8 @@ func newHandler(
 	readiness httpplatform.ReadinessChecker,
 	metadata httpplatform.MetaResponse,
 	setup httpplatform.SetupService,
+	login httpplatform.LoginService,
+	loginRateLimiter *httpplatform.LoginRateLimiter,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -104,6 +132,7 @@ func newHandler(
 	httpplatform.RegisterSetup(mux, setup)
 	apiRouter := httpplatform.NewAPIV1Router()
 	httpplatform.RegisterMeta(apiRouter, metadata)
+	httpplatform.RegisterLogin(apiRouter, login, loginRateLimiter)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux

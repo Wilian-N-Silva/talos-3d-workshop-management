@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -29,6 +30,7 @@ var testMetadata = httpplatform.MetaResponse{
 }
 
 var testSetupService = setupServiceStub{needsSetup: true}
+var testLoginService = loginServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -36,6 +38,15 @@ func (stub readinessStub) Check(context.Context) error {
 
 type setupServiceStub struct {
 	needsSetup bool
+}
+
+type loginServiceStub struct{}
+
+func (loginServiceStub) Login(
+	context.Context,
+	applicationauth.LoginInput,
+) (applicationauth.LoginResult, error) {
+	return applicationauth.LoginResult{}, nil
 }
 
 func (stub setupServiceStub) NeedsSetup(context.Context) (bool, error) {
@@ -53,7 +64,7 @@ func TestHandlerRegistersLiveness(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/health/live", nil)
 	response := httptest.NewRecorder()
 
-	newHandler(readinessStub{err: errors.New("dependencies unavailable")}, testMetadata, testSetupService).ServeHTTP(response, request)
+	newTestHandler(t, readinessStub{err: errors.New("dependencies unavailable")}).ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
@@ -64,7 +75,7 @@ func TestHandlerRegistersReadiness(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/health/ready", nil)
 	response := httptest.NewRecorder()
 
-	newHandler(readinessStub{}, testMetadata, testSetupService).ServeHTTP(response, request)
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
@@ -75,7 +86,7 @@ func TestHandlerRegistersMeta(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.MetaPath, nil)
 	response := httptest.NewRecorder()
 
-	newHandler(readinessStub{}, testMetadata, testSetupService).ServeHTTP(response, request)
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
@@ -93,7 +104,7 @@ func TestHandlerRegistersSetupStatus(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.SetupPrefix+httpplatform.SetupStatusPath, nil)
 	response := httptest.NewRecorder()
 
-	newHandler(readinessStub{}, testMetadata, testSetupService).ServeHTTP(response, request)
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
@@ -113,7 +124,7 @@ func TestHandlerHasNoProductRoutes(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil)
 	response := httptest.NewRecorder()
 
-	newHandler(readinessStub{}, testMetadata, testSetupService).ServeHTTP(response, request)
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
 
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusNotFound)
@@ -134,8 +145,9 @@ func TestRunStopsWhenContextIsCancelled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	result := make(chan error, 1)
+	handler := newTestHandler(t, readinessStub{})
 	go func() {
-		result <- run(ctx, listener, log.New(io.Discard, "", 0), newHandler(readinessStub{}, testMetadata, testSetupService))
+		result <- run(ctx, listener, log.New(io.Discard, "", 0), handler)
 	}()
 
 	client := &http.Client{Timeout: time.Second}
@@ -156,4 +168,25 @@ func TestRunStopsWhenContextIsCancelled(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("server did not stop after context cancellation")
 	}
+}
+
+func TestHandlerRegistersLogin(t *testing.T) {
+	body := `{"email_or_username":"owner","password":"a long owner passphrase","device":{"display_name":"PC","os":"Windows","app_version":"dev"}}`
+	request := httptest.NewRequest(http.MethodPost, httpplatform.APIV1Prefix+httpplatform.LoginPath, strings.NewReader(body))
+	response := httptest.NewRecorder()
+
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+	}
+}
+
+func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.Handler {
+	t.Helper()
+	limiter, err := httpplatform.NewLoginRateLimiter(100, time.Minute)
+	if err != nil {
+		t.Fatalf("NewLoginRateLimiter() error = %v", err)
+	}
+	return newHandler(readiness, testMetadata, testSetupService, testLoginService, limiter)
 }

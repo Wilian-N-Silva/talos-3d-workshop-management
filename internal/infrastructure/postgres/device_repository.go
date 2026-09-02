@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -41,6 +42,37 @@ func (repository *ClientDeviceRepository) Create(
 	return device, nil
 }
 
+// UpdateForLogin refreshes mutable installation metadata and last-seen time.
+func (repository *ClientDeviceRepository) UpdateForLogin(
+	ctx context.Context,
+	id string,
+	params auth.CreateClientDeviceParams,
+	observedAt time.Time,
+) (auth.ClientDevice, error) {
+	device, err := scanClientDevice(repository.database.QueryRowContext(
+		ctx,
+		`UPDATE client_devices
+		 SET display_name = $2,
+		     os = $3,
+		     app_version = $4,
+		     last_seen_at = GREATEST(last_seen_at, $5)
+		 WHERE id = $1
+		 RETURNING `+clientDeviceColumns,
+		id,
+		params.DisplayName,
+		params.OS,
+		params.AppVersion,
+		observedAt.UTC(),
+	))
+	if errors.Is(err, sql.ErrNoRows) {
+		return auth.ClientDevice{}, auth.ErrClientDeviceNotFound
+	}
+	if err != nil {
+		return auth.ClientDevice{}, fmt.Errorf("update client device for login: %w", err)
+	}
+	return device, nil
+}
+
 // FindByID finds a registered desktop installation by its server-generated ID.
 func (repository *ClientDeviceRepository) FindByID(
 	ctx context.Context,
@@ -51,6 +83,9 @@ func (repository *ClientDeviceRepository) FindByID(
 		`SELECT `+clientDeviceColumns+` FROM client_devices WHERE id = $1`,
 		id,
 	))
+	if errors.Is(err, sql.ErrNoRows) {
+		return auth.ClientDevice{}, auth.ErrClientDeviceNotFound
+	}
 	if err != nil {
 		return auth.ClientDevice{}, fmt.Errorf("find client device: %w", err)
 	}

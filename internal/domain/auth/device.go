@@ -1,6 +1,12 @@
 package auth
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+// ErrClientDeviceNotFound indicates that no registered installation matches a lookup.
+var ErrClientDeviceNotFound = errors.New("client device not found")
 
 // ClientDevice is an authorized desktop installation recorded for audit.
 type ClientDevice struct {
