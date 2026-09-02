@@ -1,4 +1,5 @@
-package main
+// Package desktopapp owns the Wails application boundary.
+package desktopapp
 
 import (
 	"context"
@@ -42,8 +43,8 @@ type App struct {
 	newClient      connectionClientFactory
 }
 
-// NewApp creates the desktop application.
-func NewApp() (*App, error) {
+// New creates the desktop application with user-scoped connection storage.
+func New() (*App, error) {
 	store, err := serverconnection.NewDefaultStore()
 	if err != nil {
 		return nil, err
@@ -57,8 +58,8 @@ func newApp(store connectionStore, desktopVersion string, factory connectionClie
 	return &App{store: store, desktopVersion: desktopVersion, newClient: factory}
 }
 
-// startup stores the Wails lifecycle context for native operations.
-func (a *App) startup(ctx context.Context) {
+// Startup stores the Wails lifecycle context for native operations.
+func (a *App) Startup(ctx context.Context) {
 	a.ctxMu.Lock()
 	defer a.ctxMu.Unlock()
 	a.ctx = ctx

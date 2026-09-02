@@ -84,11 +84,11 @@ jobs:
 
       - name: Test native desktop
         working-directory: desktop
-        run: go test . ./internal/...
+        run: go test ./internal/...
 
       - name: Vet native desktop
         working-directory: desktop
-        run: go vet . ./internal/...
+        run: go vet ./internal/...
 
       - name: Install frontend dependencies
         working-directory: desktop/frontend

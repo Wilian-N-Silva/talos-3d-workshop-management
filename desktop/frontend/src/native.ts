@@ -22,7 +22,7 @@ interface NativeApp {
 declare global {
     interface Window {
         go?: {
-            main?: {
+            desktopapp?: {
                 App?: NativeApp;
             };
         };
@@ -30,7 +30,7 @@ declare global {
 }
 
 function app(): NativeApp {
-    const nativeApp = window.go?.main?.App;
+    const nativeApp = window.go?.desktopapp?.App;
     if (!nativeApp) {
         throw new Error('Native desktop bridge is unavailable');
     }

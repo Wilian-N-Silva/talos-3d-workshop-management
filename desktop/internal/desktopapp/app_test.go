@@ -1,4 +1,4 @@
-package main
+package desktopapp
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func TestAppTestsConnectionThroughNativeClient(t *testing.T) {
 		factoryDesktopVersion = desktopVersion
 		return checker, nil
 	})
-	app.startup(context.Background())
+	app.Startup(context.Background())
 
 	result, err := app.TestServerConnection(" http://workshop.local:8080/ ")
 	if err != nil {
