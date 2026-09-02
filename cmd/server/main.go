@@ -13,8 +13,10 @@ import (
 	"time"
 
 	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
+	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
+	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/infrastructure/postgres"
 	healthplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/health"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
@@ -69,6 +71,21 @@ func main() {
 		os.Exit(1)
 	}
 	userRepository := postgres.NewUserRepository(database)
+	workshopSettingsService, err := applicationsettings.NewService(postgres.NewWorkshopSettingsRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize workshop settings service: %v", err)
+		os.Exit(1)
+	}
+	if _, err := workshopSettingsService.Initialize(ctx, domainsettings.Values{
+		WorkshopName:    serverConfig.WorkshopName,
+		DefaultLocale:   serverConfig.DefaultLocale,
+		DefaultCurrency: serverConfig.DefaultCurrency,
+		DisplayTimezone: serverConfig.DefaultTimezone,
+		DefaultTheme:    domainsettings.ThemeSystem,
+	}); err != nil {
+		logger.Printf("server startup failed: initialize workshop settings: %v", err)
+		os.Exit(1)
+	}
 	bootstrapService := applicationauth.NewBootstrapService(userRepository, passwordService)
 	dummyPassword := []byte("invalid login timing equalization")
 	dummyPasswordHash, err := passwordService.Hash(dummyPassword)
@@ -135,6 +152,7 @@ func main() {
 		loginRateLimiter,
 		authenticationService,
 		sessionManagementService,
+		workshopSettingsService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -149,15 +167,17 @@ func newHandler(
 	loginRateLimiter *httpplatform.LoginRateLimiter,
 	authentication httpplatform.BearerAuthenticationService,
 	sessions httpplatform.SessionManagementService,
+	settings httpplatform.WorkshopSettingsService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
 	httpplatform.RegisterReadiness(mux, readiness)
 	httpplatform.RegisterSetup(mux, setup)
 	apiRouter := httpplatform.NewAPIV1Router()
-	httpplatform.RegisterMeta(apiRouter, metadata)
+	httpplatform.RegisterMeta(apiRouter, metadata, settings)
 	httpplatform.RegisterLogin(apiRouter, login, loginRateLimiter)
 	httpplatform.RegisterSessionManagement(apiRouter, authentication, sessions)
+	httpplatform.RegisterWorkshopSettings(apiRouter, authentication, settings)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux

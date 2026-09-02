@@ -12,3 +12,4 @@ Current documents:
 - [Client-device persistence](client-devices.md)
 - [Desktop sessions](sessions.md)
 - [User persistence](users.md)
+- [Workshop settings](workshop-settings.md)

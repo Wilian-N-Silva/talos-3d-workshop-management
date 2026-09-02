@@ -1,20 +1,27 @@
 package httpplatform
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"sync"
 	"testing"
+
+	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 )
 
 func TestMetaReturnsConfiguredMetadata(t *testing.T) {
-	want := MetaResponse{
+	metadata := MetaResponse{
 		APIVersion:            APIVersion,
 		ServerVersion:         "1.2.3",
-		WorkshopName:          "Prototype Lab",
+		WorkshopName:          "stale process default",
 		MinimumDesktopVersion: "1.1.0",
 	}
+	want := metadata
+	want.WorkshopName = "Prototype Lab"
 	router := NewAPIV1Router()
-	RegisterMeta(router, want)
+	RegisterMeta(router, metadata, &workshopSettingsServiceStub{result: domainsettings.WorkshopSettings{WorkshopName: want.WorkshopName}})
 
 	response := serveAPIRequest(t, router, http.MethodGet, APIV1Prefix+MetaPath, "meta-request")
 
@@ -39,9 +46,51 @@ func TestMetaReturnsConfiguredMetadata(t *testing.T) {
 
 func TestMetaRejectsUnsupportedMethods(t *testing.T) {
 	router := NewAPIV1Router()
-	RegisterMeta(router, MetaResponse{})
+	RegisterMeta(router, MetaResponse{}, &workshopSettingsServiceStub{})
 
 	response := serveAPIRequest(t, router, http.MethodPost, APIV1Prefix+MetaPath, "")
 
 	assertAPIError(t, response, http.StatusMethodNotAllowed, "method_not_allowed", "Method not allowed")
+}
+
+func TestMetaHandlesWorkshopSettingsFailure(t *testing.T) {
+	router := NewAPIV1Router()
+	RegisterMeta(router, MetaResponse{}, &workshopSettingsServiceStub{getError: errors.New("database details")})
+
+	response := serveAPIRequest(t, router, http.MethodGet, APIV1Prefix+MetaPath, "")
+	assertAPIError(t, response, http.StatusInternalServerError, "internal_error", "Internal server error")
+}
+
+func TestMetaHandlesConcurrentRequestsWithoutSharedMutation(t *testing.T) {
+	router := NewAPIV1Router()
+	RegisterMeta(router, MetaResponse{ServerVersion: "test"}, workshopSettingsReaderFunc(
+		func(context.Context) (domainsettings.WorkshopSettings, error) {
+			return domainsettings.WorkshopSettings{WorkshopName: "Concurrent Lab"}, nil
+		},
+	))
+
+	const requests = 16
+	var wait sync.WaitGroup
+	errorsFound := make(chan error, requests)
+	for range requests {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			response := serveAPIRequest(t, router, http.MethodGet, APIV1Prefix+MetaPath, "")
+			if response.Code != http.StatusOK {
+				errorsFound <- errors.New("unexpected response status")
+			}
+		}()
+	}
+	wait.Wait()
+	close(errorsFound)
+	for err := range errorsFound {
+		t.Fatal(err)
+	}
+}
+
+type workshopSettingsReaderFunc func(context.Context) (domainsettings.WorkshopSettings, error)
+
+func (function workshopSettingsReaderFunc) Get(ctx context.Context) (domainsettings.WorkshopSettings, error) {
+	return function(ctx)
 }

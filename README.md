@@ -76,6 +76,8 @@ Important defaults include a 30-day session lifetime, five login attempts per
 minute and peer, a 100 MiB upload limit, `pt-BR`, `BRL`, and
 `America/Sao_Paulo`. `TALOS_DATABASE_URL` is required and may contain secrets,
 so it must never be logged. See `.env.example` for the complete setting list.
+Workshop presentation environment values seed a fresh database only; persisted
+settings are not overwritten on restart.
 
 Health routes are `/health/live` and `/health/ready`. Readiness checks
 PostgreSQL, migration state, and writable file storage; printer state is
@@ -98,6 +100,11 @@ Viewer. Authenticated users can list their device sessions at
 `POST /api/v1/auth/sessions/{session_id}/revoke`; cross-user management requires
 `users.manage`. Details are in `docs/architecture/authentication.md`,
 `docs/architecture/authorization.md`, and `docs/architecture/sessions.md`.
+
+Workshop settings are available to authenticated users at
+`GET /api/v1/settings`. `PUT /api/v1/settings` requires `settings.manage` and
+updates the workshop name, locale, currency, display timezone, and default
+theme. The public metadata endpoint reflects the persisted workshop name.
 
 ## Docker Compose development
 
