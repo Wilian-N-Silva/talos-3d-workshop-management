@@ -65,6 +65,8 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | RBAC-002 | verified_complete | permission helper + composed HTTP authorization middleware/tests | a77fa45 | Missing authentication returns 401; insufficient permission returns 403. |
 | SET-001 | verified_complete | migration `00007_workshop_settings` + validated singleton service/repository + PostgreSQL tests | e93aa76 | Process defaults initialize once; persisted values and fixed theme policy survive restarts. |
 | SET-002 | verified_complete | authenticated settings GET + `settings.manage` PUT + dynamic meta handler/tests | e93aa76 | All authenticated roles can read; updates require the concrete permission and immediately affect meta. |
+| SET-003 | verified_complete | validated logo service + current-logo routes + association repository/HTTP/PostgreSQL tests | 27b64cb | PNG/JPEG uploads require `settings.manage`; only the current association is public, and previous immutable objects remain valid. |
+| FILE-001 | verified_complete | migration `00008_files` + immutable file domain metadata + PostgreSQL repository tests | 27b64cb | UUID, unique SHA-256, safe storage key, original name, content type, size, uploader, and UTC creation time are persisted. |
 
 Evidence should be concise, for example:
 
@@ -83,7 +85,7 @@ id: WP-SET-02
 title: Workshop Logo & File Foundation
 tasks: [FILE-001, SET-003]
 branch: work/wp-set-02-workshop-logo
-state: in_progress
+state: ready_for_pr
 pull_request: null
 ```
 
