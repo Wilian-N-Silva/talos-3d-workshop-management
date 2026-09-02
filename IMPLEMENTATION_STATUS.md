@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: f1a7fd7
-last_reconciled_at_utc: 2026-09-02T13:26:32Z
+last_reconciled_commit: 8eeb208
+last_reconciled_at_utc: 2026-09-02T17:42:05Z
 reconciled_by: Codex
 ```
 
@@ -65,6 +65,8 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | RBAC-002 | verified_complete | permission helper + composed HTTP authorization middleware/tests | a77fa45 | Missing authentication returns 401; insufficient permission returns 403. |
 | SET-001 | verified_complete | migration `00007_workshop_settings` + validated singleton service/repository + PostgreSQL tests | e93aa76 | Process defaults initialize once; persisted values and fixed theme policy survive restarts. |
 | SET-002 | verified_complete | authenticated settings GET + `settings.manage` PUT + dynamic meta handler/tests | e93aa76 | All authenticated roles can read; updates require the concrete permission and immediately affect meta. |
+| SET-003 | verified_complete | validated logo service + current-logo routes + association repository/HTTP/PostgreSQL tests | 27b64cb | PNG/JPEG uploads require `settings.manage`; only the current association is public, and previous immutable objects remain valid. |
+| FILE-001 | verified_complete | migration `00008_files` + immutable file domain metadata + PostgreSQL repository tests | 27b64cb | UUID, unique SHA-256, safe storage key, original name, content type, size, uploader, and UTC creation time are persisted. |
 
 Evidence should be concise, for example:
 
@@ -79,12 +81,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-SET-01
-title: Workshop Settings Foundation
-tasks: [SET-001, SET-002]
-branch: work/wp-set-01-workshop-settings
+id: WP-SET-02
+title: Workshop Logo & File Foundation
+tasks: [FILE-001, SET-003]
+branch: work/wp-set-02-workshop-logo
 state: in_review
-pull_request: 25
+pull_request: 26
 ```
 
 Recommended `state` values:
@@ -104,6 +106,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-SET-01 | SET-001, SET-002 | 8eeb208 (PR #25) | Persisted workshop settings and permission-aware API. |
 | WP-AUTH-02 | AUTH-008 | f1a7fd7 (PR #24) | Session/device listing and permission-aware revocation. |
 | WP-AUTH-01 | AUTH-007, RBAC-001, RBAC-002 | 6f9628d (PR #23) | Bearer authentication and permission-based access control. |
 

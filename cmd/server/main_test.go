@@ -14,7 +14,9 @@ import (
 	"time"
 
 	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
+	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	domainauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
+	domainfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/files"
 	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
 )
@@ -35,6 +37,7 @@ var testLoginService = loginServiceStub{}
 var testAuthenticationService = authenticationServiceStub{}
 var testSessionManagementService = sessionManagementServiceStub{}
 var testWorkshopSettingsService = workshopSettingsServiceStub{}
+var testWorkshopLogoService = workshopLogoServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -51,6 +54,8 @@ type authenticationServiceStub struct{}
 type sessionManagementServiceStub struct{}
 
 type workshopSettingsServiceStub struct{}
+
+type workshopLogoServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -108,6 +113,17 @@ func (workshopSettingsServiceStub) Update(
 	domainsettings.Values,
 ) (domainsettings.WorkshopSettings, error) {
 	return domainsettings.WorkshopSettings{}, nil
+}
+
+func (workshopLogoServiceStub) Upload(
+	context.Context,
+	applicationsettings.LogoUpload,
+) (applicationsettings.LogoUploadResult, error) {
+	return applicationsettings.LogoUploadResult{}, nil
+}
+
+func (workshopLogoServiceStub) OpenCurrent(context.Context) (applicationsettings.LogoDownload, error) {
+	return applicationsettings.LogoDownload{}, domainfiles.ErrFileNotFound
 }
 
 func (stub setupServiceStub) NeedsSetup(context.Context) (bool, error) {
@@ -267,6 +283,17 @@ func TestHandlerRegistersWorkshopSettings(t *testing.T) {
 	}
 }
 
+func TestHandlerRegistersWorkshopLogo(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.WorkshopLogoDownloadPath, nil)
+	response := httptest.NewRecorder()
+
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusNotFound, response.Body.String())
+	}
+}
+
 func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.Handler {
 	t.Helper()
 	limiter, err := httpplatform.NewLoginRateLimiter(100, time.Minute)
@@ -282,5 +309,7 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		testAuthenticationService,
 		testSessionManagementService,
 		testWorkshopSettingsService,
+		testWorkshopLogoService,
+		applicationsettings.DefaultMaximumLogoBytes,
 	)
 }

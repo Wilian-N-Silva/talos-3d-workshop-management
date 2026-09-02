@@ -18,6 +18,20 @@ mutable values with `PUT /api/v1/settings` requires the concrete
 persisted workshop name on every request, so branding discovery reflects an
 authorized update without restarting the server.
 
-`logo_file_id` is nullable and read-only in this package. SET-003 will associate
-it only after immutable file metadata, image validation, object storage, and an
-authorized download route are available.
+`POST /api/v1/settings/logo` requires `settings.manage` and accepts one
+multipart `file`. The service reads at most the smaller of the configured
+upload limit and 5 MiB, rejects path-like/control-character names, and fully
+decodes PNG or JPEG content. Images must be no larger than 4096 × 4096 pixels;
+the client-supplied content type is not trusted.
+
+File metadata and the `logo_file_id` association are committed atomically after
+the validated bytes enter immutable content-addressed storage. Replacing a logo
+does not delete the previous file record or object; cleanup policy does not yet
+exist. Identical bytes reuse the SHA-256 file record.
+
+Both settings and metadata responses expose `/api/v1/meta/logo` only when a
+logo is associated. That fixed pre-login branding route is public but
+association-authorized: it joins through the singleton's current
+`logo_file_id` and accepts no caller-controlled file ID or storage key. It
+cannot retrieve previous logos or arbitrary files. Responses use the persisted
+content type, `nosniff`, an SHA-256 ETag, and revalidation caching.

@@ -105,6 +105,11 @@ Workshop settings are available to authenticated users at
 `GET /api/v1/settings`. `PUT /api/v1/settings` requires `settings.manage` and
 updates the workshop name, locale, currency, display timezone, and default
 theme. The public metadata endpoint reflects the persisted workshop name.
+Users with `settings.manage` can upload a validated PNG/JPEG logo with
+`POST /api/v1/settings/logo`. Metadata returns the fixed current-logo URL
+`/api/v1/meta/logo`, which is safe for pre-login branding because it cannot
+address arbitrary files. Logo uploads are capped at 5 MiB or the lower
+configured upload limit.
 
 ## Docker Compose development
 

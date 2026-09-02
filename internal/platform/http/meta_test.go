@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"reflect"
 	"sync"
 	"testing"
 
@@ -20,8 +21,14 @@ func TestMetaReturnsConfiguredMetadata(t *testing.T) {
 	}
 	want := metadata
 	want.WorkshopName = "Prototype Lab"
+	logoFileID := "logo-file-id"
+	logoURL := APIV1Prefix + WorkshopLogoDownloadPath
+	want.LogoURL = &logoURL
 	router := NewAPIV1Router()
-	RegisterMeta(router, metadata, &workshopSettingsServiceStub{result: domainsettings.WorkshopSettings{WorkshopName: want.WorkshopName}})
+	RegisterMeta(router, metadata, &workshopSettingsServiceStub{result: domainsettings.WorkshopSettings{
+		WorkshopName: want.WorkshopName,
+		LogoFileID:   &logoFileID,
+	}})
 
 	response := serveAPIRequest(t, router, http.MethodGet, APIV1Prefix+MetaPath, "meta-request")
 
@@ -39,7 +46,7 @@ func TestMetaReturnsConfiguredMetadata(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode metadata: %v", err)
 	}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("metadata = %#v, want %#v", got, want)
 	}
 }

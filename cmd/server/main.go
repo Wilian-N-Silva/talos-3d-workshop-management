@@ -17,6 +17,7 @@ import (
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
 	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
+	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/infrastructure/filestorage"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/infrastructure/postgres"
 	healthplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/health"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
@@ -86,6 +87,24 @@ func main() {
 		logger.Printf("server startup failed: initialize workshop settings: %v", err)
 		os.Exit(1)
 	}
+	objectStore, err := filestorage.NewLocalFilesystemStorage(serverConfig.DataDirectory)
+	if err != nil {
+		logger.Printf("server startup failed: initialize object storage: %v", err)
+		os.Exit(1)
+	}
+	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
+	if serverConfig.UploadMaxBytes < maximumLogoBytes {
+		maximumLogoBytes = serverConfig.UploadMaxBytes
+	}
+	workshopLogoService, err := applicationsettings.NewLogoService(
+		postgres.NewWorkshopLogoRepository(database),
+		objectStore,
+		maximumLogoBytes,
+	)
+	if err != nil {
+		logger.Printf("server startup failed: initialize workshop logo service: %v", err)
+		os.Exit(1)
+	}
 	bootstrapService := applicationauth.NewBootstrapService(userRepository, passwordService)
 	dummyPassword := []byte("invalid login timing equalization")
 	dummyPasswordHash, err := passwordService.Hash(dummyPassword)
@@ -153,6 +172,8 @@ func main() {
 		authenticationService,
 		sessionManagementService,
 		workshopSettingsService,
+		workshopLogoService,
+		maximumLogoBytes,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -168,6 +189,8 @@ func newHandler(
 	authentication httpplatform.BearerAuthenticationService,
 	sessions httpplatform.SessionManagementService,
 	settings httpplatform.WorkshopSettingsService,
+	logo httpplatform.WorkshopLogoService,
+	maximumLogoBytes int64,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -178,6 +201,7 @@ func newHandler(
 	httpplatform.RegisterLogin(apiRouter, login, loginRateLimiter)
 	httpplatform.RegisterSessionManagement(apiRouter, authentication, sessions)
 	httpplatform.RegisterWorkshopSettings(apiRouter, authentication, settings)
+	httpplatform.RegisterWorkshopLogo(apiRouter, authentication, logo, maximumLogoBytes)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux

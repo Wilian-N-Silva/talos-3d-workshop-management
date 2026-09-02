@@ -11,10 +11,11 @@ const (
 
 // MetaResponse describes server and desktop compatibility metadata.
 type MetaResponse struct {
-	APIVersion            string `json:"api_version"`
-	ServerVersion         string `json:"server_version"`
-	WorkshopName          string `json:"workshop_name"`
-	MinimumDesktopVersion string `json:"minimum_desktop_version"`
+	APIVersion            string  `json:"api_version"`
+	ServerVersion         string  `json:"server_version"`
+	WorkshopName          string  `json:"workshop_name"`
+	LogoURL               *string `json:"logo_url"`
+	MinimumDesktopVersion string  `json:"minimum_desktop_version"`
 }
 
 // RegisterMeta registers the unauthenticated server metadata endpoint with the
@@ -28,6 +29,7 @@ func RegisterMeta(router *APIV1Router, metadata MetaResponse, settings WorkshopS
 		}
 		responseMetadata := metadata
 		responseMetadata.WorkshopName = current.WorkshopName
+		responseMetadata.LogoURL = workshopLogoURL(current.LogoFileID)
 		writeJSON(response, http.StatusOK, responseMetadata)
 	})
 }
