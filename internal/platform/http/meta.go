@@ -1,9 +1,6 @@
 package httpplatform
 
-import (
-	"encoding/json"
-	"net/http"
-)
+import "net/http"
 
 const (
 	// APIVersion identifies the versioned HTTP contract exposed by this router.
@@ -20,11 +17,17 @@ type MetaResponse struct {
 	MinimumDesktopVersion string `json:"minimum_desktop_version"`
 }
 
-// RegisterMeta registers the unauthenticated server metadata endpoint.
-func RegisterMeta(router *APIV1Router, metadata MetaResponse) {
-	router.HandleFunc(http.MethodGet, MetaPath, func(response http.ResponseWriter, _ *http.Request) {
-		response.Header().Set("Content-Type", "application/json")
-		response.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(response).Encode(metadata)
+// RegisterMeta registers the unauthenticated server metadata endpoint with the
+// current persisted workshop name.
+func RegisterMeta(router *APIV1Router, metadata MetaResponse, settings WorkshopSettingsReader) {
+	router.HandleFunc(http.MethodGet, MetaPath, func(response http.ResponseWriter, request *http.Request) {
+		current, err := settings.Get(request.Context())
+		if err != nil {
+			WriteError(response, http.StatusInternalServerError, "internal_error", "Internal server error", nil)
+			return
+		}
+		responseMetadata := metadata
+		responseMetadata.WorkshopName = current.WorkshopName
+		writeJSON(response, http.StatusOK, responseMetadata)
 	})
 }

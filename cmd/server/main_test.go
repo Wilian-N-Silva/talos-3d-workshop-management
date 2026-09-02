@@ -15,6 +15,7 @@ import (
 
 	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
 	domainauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
+	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
 )
 
@@ -33,6 +34,7 @@ var testSetupService = setupServiceStub{needsSetup: true}
 var testLoginService = loginServiceStub{}
 var testAuthenticationService = authenticationServiceStub{}
 var testSessionManagementService = sessionManagementServiceStub{}
+var testWorkshopSettingsService = workshopSettingsServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -47,6 +49,8 @@ type loginServiceStub struct{}
 type authenticationServiceStub struct{}
 
 type sessionManagementServiceStub struct{}
+
+type workshopSettingsServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -87,6 +91,23 @@ func (sessionManagementServiceStub) Revoke(
 	string,
 ) (domainauth.Session, error) {
 	return domainauth.Session{}, nil
+}
+
+func (workshopSettingsServiceStub) Get(context.Context) (domainsettings.WorkshopSettings, error) {
+	return domainsettings.WorkshopSettings{
+		WorkshopName:    testMetadata.WorkshopName,
+		DefaultLocale:   "pt-BR",
+		DefaultCurrency: "BRL",
+		DisplayTimezone: "America/Sao_Paulo",
+		DefaultTheme:    domainsettings.ThemeSystem,
+	}, nil
+}
+
+func (workshopSettingsServiceStub) Update(
+	context.Context,
+	domainsettings.Values,
+) (domainsettings.WorkshopSettings, error) {
+	return domainsettings.WorkshopSettings{}, nil
 }
 
 func (stub setupServiceStub) NeedsSetup(context.Context) (bool, error) {
@@ -234,6 +255,18 @@ func TestHandlerRegistersSessionManagement(t *testing.T) {
 	}
 }
 
+func TestHandlerRegistersWorkshopSettings(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.WorkshopSettingsPath, nil)
+	request.Header.Set("Authorization", "Bearer test-token")
+	response := httptest.NewRecorder()
+
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+}
+
 func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.Handler {
 	t.Helper()
 	limiter, err := httpplatform.NewLoginRateLimiter(100, time.Minute)
@@ -248,5 +281,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		limiter,
 		testAuthenticationService,
 		testSessionManagementService,
+		testWorkshopSettingsService,
 	)
 }
