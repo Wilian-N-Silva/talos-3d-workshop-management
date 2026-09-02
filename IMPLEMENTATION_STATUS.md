@@ -63,6 +63,8 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | AUTH-008 | verified_complete | protected session list/revoke routes + ownership/`users.manage` service checks + PostgreSQL revocation/authentication test | e6e265f | Safe device metadata is listable; revocation is idempotent and immediately invalidates the bearer token. |
 | RBAC-001 | verified_complete | migration `00006_user_roles` + fixed permission catalog/matrix tests | a77fa45 | Bootstrap identity is Owner; legacy non-owner users become Viewers. |
 | RBAC-002 | verified_complete | permission helper + composed HTTP authorization middleware/tests | a77fa45 | Missing authentication returns 401; insufficient permission returns 403. |
+| SET-001 | verified_complete | migration `00007_workshop_settings` + validated singleton service/repository + PostgreSQL tests | e93aa76 | Process defaults initialize once; persisted values and fixed theme policy survive restarts. |
+| SET-002 | verified_complete | authenticated settings GET + `settings.manage` PUT + dynamic meta handler/tests | e93aa76 | All authenticated roles can read; updates require the concrete permission and immediately affect meta. |
 
 Evidence should be concise, for example:
 
@@ -81,7 +83,7 @@ id: WP-SET-01
 title: Workshop Settings Foundation
 tasks: [SET-001, SET-002]
 branch: work/wp-set-01-workshop-settings
-state: in_progress
+state: ready_for_pr
 pull_request: null
 ```
 
