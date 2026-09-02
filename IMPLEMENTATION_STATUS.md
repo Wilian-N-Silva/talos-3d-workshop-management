@@ -59,9 +59,9 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | AUTH-004 | verified_complete | migration `00004_client_devices` + repository tests | 55e19a9 | Installation metadata and last-seen audit state persisted. |
 | AUTH-005 | verified_complete | migration `00005_sessions` + token/session tests | 55e19a9 | 256-bit opaque token; only SHA-256 hash is persisted. |
 | AUTH-006 | verified_complete | login service/endpoint/rate-limit/integration tests | 55e19a9 | Uniform invalid credentials, last-login update, and session issuance. |
-| AUTH-007 | verified_complete | authentication service + hash-only repository lookup/touch + bearer middleware/tests | WP-AUTH-01 | Expired/revoked/disabled sessions are rejected; last-used writes are throttled. |
-| RBAC-001 | verified_complete | migration `00006_user_roles` + fixed permission catalog/matrix tests | WP-AUTH-01 | Bootstrap identity is Owner; legacy non-owner users become Viewers. |
-| RBAC-002 | verified_complete | permission helper + composed HTTP authorization middleware/tests | WP-AUTH-01 | Missing authentication returns 401; insufficient permission returns 403. |
+| AUTH-007 | verified_complete | authentication service + hash-only repository lookup/touch + bearer middleware/tests | a77fa45 | Expired/revoked/disabled sessions are rejected; last-used writes are throttled. |
+| RBAC-001 | verified_complete | migration `00006_user_roles` + fixed permission catalog/matrix tests | a77fa45 | Bootstrap identity is Owner; legacy non-owner users become Viewers. |
+| RBAC-002 | verified_complete | permission helper + composed HTTP authorization middleware/tests | a77fa45 | Missing authentication returns 401; insufficient permission returns 403. |
 
 Evidence should be concise, for example:
 
