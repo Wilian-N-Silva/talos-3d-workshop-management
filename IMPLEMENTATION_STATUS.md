@@ -60,6 +60,7 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | AUTH-005 | verified_complete | migration `00005_sessions` + token/session tests | 55e19a9 | 256-bit opaque token; only SHA-256 hash is persisted. |
 | AUTH-006 | verified_complete | login service/endpoint/rate-limit/integration tests | 55e19a9 | Uniform invalid credentials, last-login update, and session issuance. |
 | AUTH-007 | verified_complete | authentication service + hash-only repository lookup/touch + bearer middleware/tests | a77fa45 | Expired/revoked/disabled sessions are rejected; last-used writes are throttled. |
+| AUTH-008 | verified_complete | protected session list/revoke routes + ownership/`users.manage` service checks + PostgreSQL revocation/authentication test | e6e265f | Safe device metadata is listable; revocation is idempotent and immediately invalidates the bearer token. |
 | RBAC-001 | verified_complete | migration `00006_user_roles` + fixed permission catalog/matrix tests | a77fa45 | Bootstrap identity is Owner; legacy non-owner users become Viewers. |
 | RBAC-002 | verified_complete | permission helper + composed HTTP authorization middleware/tests | a77fa45 | Missing authentication returns 401; insufficient permission returns 403. |
 
@@ -80,7 +81,7 @@ id: WP-AUTH-02
 title: Session Management
 tasks: [AUTH-008]
 branch: work/wp-auth-02-session-management
-state: in_progress
+state: ready_for_pr
 pull_request: null
 ```
 
