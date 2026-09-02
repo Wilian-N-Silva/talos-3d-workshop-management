@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -21,7 +20,6 @@ var (
 	ErrInvalidCredentials        = errors.New("invalid credentials")
 	ErrInvalidLoginDevice        = errors.New("invalid login device")
 	ErrInvalidLoginConfiguration = errors.New("invalid login configuration")
-	clientDeviceIDPattern        = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 )
 
 // LoginUserRepository provides identity lookup and successful-login updates.
@@ -186,7 +184,7 @@ func (service *LoginService) rejectCredentials(password []byte) error {
 
 func normalizeLoginDevice(input LoginDeviceInput) (string, domainauth.CreateClientDeviceParams, error) {
 	id := strings.TrimSpace(input.ID)
-	if id != "" && !clientDeviceIDPattern.MatchString(id) {
+	if id != "" && !validUUID(id) {
 		return "", domainauth.CreateClientDeviceParams{}, ErrInvalidLoginDevice
 	}
 	displayName := strings.TrimSpace(input.DisplayName)

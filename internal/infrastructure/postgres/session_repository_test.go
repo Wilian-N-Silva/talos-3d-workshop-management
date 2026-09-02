@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"os"
 	"regexp"
@@ -11,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
 )
 
@@ -57,7 +59,7 @@ func TestSessionRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("create session device: %v", err)
 	}
 
-	plaintextToken := "server-must-not-persist-this-token"
+	plaintextToken := base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{0xa5}, 32))
 	tokenHash := sha256.Sum256([]byte(plaintextToken))
 	expiresAt := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Microsecond)
 	repository := NewSessionRepository(database)
@@ -164,6 +166,52 @@ func TestSessionRepositoryAgainstPostgreSQL(t *testing.T) {
 	}
 	if resolvedSession.LastUsedAt == nil || !resolvedSession.LastUsedAt.Equal(concurrentUsedAt) {
 		t.Fatalf("resolved LastUsedAt = %v, want %s", resolvedSession.LastUsedAt, concurrentUsedAt)
+	}
+
+	found, err := repository.FindByID(ctx, created.ID)
+	if err != nil || found.ID != created.ID {
+		t.Fatalf("FindByID() = %#v, %v", found, err)
+	}
+	if _, err := repository.FindByID(ctx, "00000000-0000-4000-8000-000000000000"); !errors.Is(err, auth.ErrSessionNotFound) {
+		t.Fatalf("FindByID() missing error = %v, want ErrSessionNotFound", err)
+	}
+	details, err := repository.ListByUserID(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("ListByUserID() error = %v", err)
+	}
+	if len(details) != 1 || details[0].Session.ID != created.ID || details[0].Device.ID != device.ID || details[0].Device.DisplayName != "Workshop PC" {
+		t.Fatalf("ListByUserID() = %#v", details)
+	}
+	if details[0].Session.TokenHash != nil {
+		t.Fatalf("ListByUserID() exposed token hash = %x", details[0].Session.TokenHash)
+	}
+	emptyDetails, err := repository.ListByUserID(ctx, "00000000-0000-4000-8000-000000000000")
+	if err != nil || emptyDetails == nil || len(emptyDetails) != 0 {
+		t.Fatalf("ListByUserID() empty = %#v, %v", emptyDetails, err)
+	}
+
+	authentication, err := applicationauth.NewAuthenticationService(repository, applicationauth.DefaultSessionLastUsedInterval)
+	if err != nil {
+		t.Fatalf("NewAuthenticationService() error = %v", err)
+	}
+	if _, err := authentication.Authenticate(ctx, plaintextToken); err != nil {
+		t.Fatalf("Authenticate() before revocation error = %v", err)
+	}
+	revokedAt := time.Now().UTC().Truncate(time.Microsecond)
+	revoked, err := repository.Revoke(ctx, created.ID, revokedAt)
+	if err != nil || revoked.RevokedAt == nil || !revoked.RevokedAt.Equal(revokedAt) {
+		t.Fatalf("Revoke() = %#v, %v", revoked, err)
+	}
+	secondRevocation := revokedAt.Add(time.Minute)
+	revokedAgain, err := repository.Revoke(ctx, created.ID, secondRevocation)
+	if err != nil || revokedAgain.RevokedAt == nil || !revokedAgain.RevokedAt.Equal(revokedAt) {
+		t.Fatalf("Revoke() repeated = %#v, %v, want original %s", revokedAgain, err, revokedAt)
+	}
+	if _, err := authentication.Authenticate(ctx, plaintextToken); !errors.Is(err, applicationauth.ErrUnauthenticated) {
+		t.Fatalf("Authenticate() after revocation error = %v, want ErrUnauthenticated", err)
+	}
+	if _, err := repository.Revoke(ctx, "00000000-0000-4000-8000-000000000000", revokedAt); !errors.Is(err, auth.ErrSessionNotFound) {
+		t.Fatalf("Revoke() missing error = %v, want ErrSessionNotFound", err)
 	}
 
 	invalidDeviceHash := sha256.Sum256([]byte("invalid-device-token"))

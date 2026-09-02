@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: 55e19a9
-last_reconciled_at_utc: 2026-09-02T12:28:26Z
+last_reconciled_commit: 6f9628d
+last_reconciled_at_utc: 2026-09-02T13:01:21Z
 reconciled_by: Codex
 ```
 
@@ -60,6 +60,7 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | AUTH-005 | verified_complete | migration `00005_sessions` + token/session tests | 55e19a9 | 256-bit opaque token; only SHA-256 hash is persisted. |
 | AUTH-006 | verified_complete | login service/endpoint/rate-limit/integration tests | 55e19a9 | Uniform invalid credentials, last-login update, and session issuance. |
 | AUTH-007 | verified_complete | authentication service + hash-only repository lookup/touch + bearer middleware/tests | a77fa45 | Expired/revoked/disabled sessions are rejected; last-used writes are throttled. |
+| AUTH-008 | verified_complete | protected session list/revoke routes + ownership/`users.manage` service checks + PostgreSQL revocation/authentication test | e6e265f | Safe device metadata is listable; revocation is idempotent and immediately invalidates the bearer token. |
 | RBAC-001 | verified_complete | migration `00006_user_roles` + fixed permission catalog/matrix tests | a77fa45 | Bootstrap identity is Owner; legacy non-owner users become Viewers. |
 | RBAC-002 | verified_complete | permission helper + composed HTTP authorization middleware/tests | a77fa45 | Missing authentication returns 401; insufficient permission returns 403. |
 
@@ -76,12 +77,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-AUTH-01
-title: Bearer Authentication & Access Control
-tasks: [AUTH-007, RBAC-001, RBAC-002]
-branch: work/wp-auth-01-access-control
+id: WP-AUTH-02
+title: Session Management
+tasks: [AUTH-008]
+branch: work/wp-auth-02-session-management
 state: in_review
-pull_request: 23
+pull_request: 24
 ```
 
 Recommended `state` values:
@@ -101,7 +102,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
-| _Populate as packages are completed_ |  |  |  |
+| WP-AUTH-01 | AUTH-007, RBAC-001, RBAC-002 | 6f9628d (PR #23) | Bearer authentication and permission-based access control. |
 
 Keep this section lightweight. Older detail remains available through Git history and does not need to be duplicated forever.
 
@@ -111,7 +112,7 @@ Keep this section lightweight. Older detail remains available through Git histor
 
 | ID | Source | Description | Disposition |
 |---|---|---|---|
-| FUP-CFG-001 | reconciliation at 55e19a9 | Direct `go run` listener ignores `TALOS_SERVER_BIND_ADDRESS`/`TALOS_TRUSTED_LAN` and binds all interfaces; align listener policy with trusted-LAN security docs. | Future configuration/security Work Package; not expanded into WP-AUTH-01. |
+| FUP-CFG-001 | reconciliation at 55e19a9 | Direct `go run` listener ignores `TALOS_SERVER_BIND_ADDRESS`/`TALOS_TRUSTED_LAN` and binds all interfaces; align listener policy with trusted-LAN security docs. | Future configuration/security Work Package; not expanded into authentication packages. |
 
 Use this only for concrete follow-up work discovered during implementation/reconciliation. Do not turn it into a second product backlog.
 

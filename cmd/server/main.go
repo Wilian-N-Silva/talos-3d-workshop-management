@@ -77,7 +77,8 @@ func main() {
 		logger.Printf("server startup failed: initialize login verification: %v", err)
 		os.Exit(1)
 	}
-	sessionService := applicationauth.NewSessionService(postgres.NewSessionRepository(database))
+	sessionRepository := postgres.NewSessionRepository(database)
+	sessionService := applicationauth.NewSessionService(sessionRepository)
 	loginService, err := applicationauth.NewLoginService(
 		userRepository,
 		postgres.NewClientDeviceRepository(database),
@@ -88,6 +89,19 @@ func main() {
 	)
 	if err != nil {
 		logger.Printf("server startup failed: initialize login service: %v", err)
+		os.Exit(1)
+	}
+	authenticationService, err := applicationauth.NewAuthenticationService(
+		sessionRepository,
+		applicationauth.DefaultSessionLastUsedInterval,
+	)
+	if err != nil {
+		logger.Printf("server startup failed: initialize authentication service: %v", err)
+		os.Exit(1)
+	}
+	sessionManagementService, err := applicationauth.NewSessionManagementService(sessionRepository)
+	if err != nil {
+		logger.Printf("server startup failed: initialize session management service: %v", err)
 		os.Exit(1)
 	}
 	loginRateLimiter, err := httpplatform.NewLoginRateLimiter(
@@ -113,7 +127,15 @@ func main() {
 	}
 
 	logger.Printf("server listening on %s", listener.Addr())
-	if err := run(ctx, listener, logger, newHandler(readiness, metadata, bootstrapService, loginService, loginRateLimiter)); err != nil {
+	if err := run(ctx, listener, logger, newHandler(
+		readiness,
+		metadata,
+		bootstrapService,
+		loginService,
+		loginRateLimiter,
+		authenticationService,
+		sessionManagementService,
+	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
 	}
@@ -125,6 +147,8 @@ func newHandler(
 	setup httpplatform.SetupService,
 	login httpplatform.LoginService,
 	loginRateLimiter *httpplatform.LoginRateLimiter,
+	authentication httpplatform.BearerAuthenticationService,
+	sessions httpplatform.SessionManagementService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -133,6 +157,7 @@ func newHandler(
 	apiRouter := httpplatform.NewAPIV1Router()
 	httpplatform.RegisterMeta(apiRouter, metadata)
 	httpplatform.RegisterLogin(apiRouter, login, loginRateLimiter)
+	httpplatform.RegisterSessionManagement(apiRouter, authentication, sessions)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux
