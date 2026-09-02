@@ -83,8 +83,8 @@ id: WP-SET-01
 title: Workshop Settings Foundation
 tasks: [SET-001, SET-002]
 branch: work/wp-set-01-workshop-settings
-state: ready_for_pr
-pull_request: null
+state: in_review
+pull_request: 25
 ```
 
 Recommended `state` values:
