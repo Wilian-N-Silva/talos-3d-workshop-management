@@ -31,7 +31,7 @@ func TestLoginFlowAgainstPostgreSQL(t *testing.T) {
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE sessions, bootstrap_state, users, client_devices"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
 		t.Fatalf("truncate authentication tables: %v", err)
 	}
 

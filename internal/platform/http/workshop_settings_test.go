@@ -18,8 +18,10 @@ import (
 
 func TestWorkshopSettingsReadAllowsAuthenticatedUser(t *testing.T) {
 	updatedAt := time.Date(2026, time.September, 2, 14, 0, 0, 0, time.UTC)
+	logoFileID := "logo-file-id"
 	service := &workshopSettingsServiceStub{result: domainsettings.WorkshopSettings{
 		WorkshopName:    "Prototype Lab",
+		LogoFileID:      &logoFileID,
 		DefaultLocale:   "pt-BR",
 		DefaultCurrency: "BRL",
 		DisplayTimezone: "America/Sao_Paulo",
@@ -39,7 +41,8 @@ func TestWorkshopSettingsReadAllowsAuthenticatedUser(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if got.WorkshopName != "Prototype Lab" || got.DefaultTheme != domainsettings.ThemeSystem || !got.UpdatedAt.Equal(updatedAt) {
+	if got.WorkshopName != "Prototype Lab" || got.DefaultTheme != domainsettings.ThemeSystem || !got.UpdatedAt.Equal(updatedAt) ||
+		got.LogoURL == nil || *got.LogoURL != APIV1Prefix+WorkshopLogoDownloadPath {
 		t.Fatalf("settings response = %#v", got)
 	}
 }

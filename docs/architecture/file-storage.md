@@ -31,3 +31,13 @@ Writes are streamed to a same-filesystem staging directory, flushed, closed,
 and atomically published without replacing an existing path. Concurrent writes
 of identical content converge on the same object. If an existing object's bytes
 do not match its content address, the write fails instead of overwriting it.
+
+Migration `00008_files.sql` adds immutable metadata with UUID identity,
+32-byte SHA-256 uniqueness, a validated opaque storage key, original name,
+content type, byte size, uploader, and UTC creation time. Metadata names never
+participate in physical paths. Identical bytes reuse the existing metadata and
+content-addressed object; the first immutable metadata record remains canonical.
+
+The first consumer is the [workshop logo](workshop-settings.md). Generic
+authenticated file upload and file-by-ID download remain FILE-002 and FILE-003
+scope.

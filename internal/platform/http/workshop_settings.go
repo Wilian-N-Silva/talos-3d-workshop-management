@@ -40,6 +40,7 @@ type workshopSettingsRequest struct {
 type workshopSettingsResponse struct {
 	WorkshopName    string               `json:"workshop_name"`
 	LogoFileID      *string              `json:"logo_file_id"`
+	LogoURL         *string              `json:"logo_url"`
 	DefaultLocale   string               `json:"default_locale"`
 	DefaultCurrency string               `json:"default_currency"`
 	DisplayTimezone string               `json:"display_timezone"`
@@ -98,12 +99,21 @@ func newWorkshopSettingsResponse(settings domainsettings.WorkshopSettings) works
 	return workshopSettingsResponse{
 		WorkshopName:    settings.WorkshopName,
 		LogoFileID:      settings.LogoFileID,
+		LogoURL:         workshopLogoURL(settings.LogoFileID),
 		DefaultLocale:   settings.DefaultLocale,
 		DefaultCurrency: settings.DefaultCurrency,
 		DisplayTimezone: settings.DisplayTimezone,
 		DefaultTheme:    settings.DefaultTheme,
 		UpdatedAt:       settings.UpdatedAt,
 	}
+}
+
+func workshopLogoURL(logoFileID *string) *string {
+	if logoFileID == nil {
+		return nil
+	}
+	value := APIV1Prefix + WorkshopLogoDownloadPath
+	return &value
 }
 
 func decodeWorkshopSettingsRequest(

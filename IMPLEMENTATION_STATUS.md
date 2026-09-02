@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: f1a7fd7
-last_reconciled_at_utc: 2026-09-02T13:26:32Z
+last_reconciled_commit: 8eeb208
+last_reconciled_at_utc: 2026-09-02T17:42:05Z
 reconciled_by: Codex
 ```
 
@@ -79,12 +79,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-SET-01
-title: Workshop Settings Foundation
-tasks: [SET-001, SET-002]
-branch: work/wp-set-01-workshop-settings
-state: in_review
-pull_request: 25
+id: WP-SET-02
+title: Workshop Logo & File Foundation
+tasks: [FILE-001, SET-003]
+branch: work/wp-set-02-workshop-logo
+state: in_progress
+pull_request: null
 ```
 
 Recommended `state` values:
@@ -104,6 +104,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-SET-01 | SET-001, SET-002 | 8eeb208 (PR #25) | Persisted workshop settings and permission-aware API. |
 | WP-AUTH-02 | AUTH-008 | f1a7fd7 (PR #24) | Session/device listing and permission-aware revocation. |
 | WP-AUTH-01 | AUTH-007, RBAC-001, RBAC-002 | 6f9628d (PR #23) | Bearer authentication and permission-based access control. |
 
