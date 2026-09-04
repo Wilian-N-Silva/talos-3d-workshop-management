@@ -71,6 +71,9 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
 | DESK-004 | verified_complete | Windows Credential Manager session store + expiry/restore/logout tests + Wails production build | 1c9e285 | Session credentials are server-scoped, absent from plaintext config, restored at startup, and deleted on logout. |
+| DESK-005 | verified_complete | safe native current-user/permission DTO + React permission context + authenticated settings/401/403 tests | 01a4cd2 | UI visibility uses concrete permissions; protected requests remain server-authorized and rejected sessions are removed. |
+| DESK-006 | verified_complete | fixed light/dark/system selector + CSS variable palettes + local preference/workshop-default policy | 01a4cd2 | Only the three PRD theme modes are accepted; system follows the OS color scheme. |
+| DESK-007 | verified_complete | native same-origin logo client + branded login/shell + fallback + dynamic Wails title | 01a4cd2 | Logo response is bounded to PNG/JPEG and never fetched directly by React. |
 
 Evidence should be concise, for example:
 
@@ -89,7 +92,7 @@ id: WP-DESK-03
 title: Permission-Aware Branded Desktop Shell
 tasks: [DESK-005, DESK-006, DESK-007]
 branch: work/wp-desk-03-application-shell
-state: in_progress
+state: ready_for_pr
 pull_request: null
 ```
 
