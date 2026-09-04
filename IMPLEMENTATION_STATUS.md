@@ -67,6 +67,8 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | SET-002 | verified_complete | authenticated settings GET + `settings.manage` PUT + dynamic meta handler/tests | e93aa76 | All authenticated roles can read; updates require the concrete permission and immediately affect meta. |
 | SET-003 | verified_complete | validated logo service + current-logo routes + association repository/HTTP/PostgreSQL tests | 27b64cb | PNG/JPEG uploads require `settings.manage`; only the current association is public, and previous immutable objects remain valid. |
 | FILE-001 | verified_complete | migration `00008_files` + immutable file domain metadata + PostgreSQL repository tests | 27b64cb | UUID, unique SHA-256, safe storage key, original name, content type, size, uploader, and UTC creation time are persisted. |
+| FILE-002 | verified_complete | bounded multipart route + immutable upload service/repository + SHA-256 dedup/cleanup tests | 89f05d3 | `files.upload` is enforced; only newly published unreferenced objects are removed during compensation. |
+| FILE-003 | verified_complete | permission-protected file-by-ID route + repository/storage streaming + 404/403/header tests | 89f05d3 | `files.read` is enforced; downloads use safe attachment disposition and server-controlled object keys. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -92,7 +94,7 @@ id: WP-FILE-01
 title: Authorized Immutable File Transfer
 tasks: [FILE-002, FILE-003]
 branch: work/wp-file-01-authorized-transfer
-state: in_progress
+state: ready_for_pr
 pull_request: null
 ```
 
