@@ -107,7 +107,7 @@ func (r *JobRepository) Transition(ctx context.Context, id string, expected doma
 		return domain.Job{}, fmt.Errorf("begin job transition: %w", err)
 	}
 	defer tx.Rollback()
-	job, err := scanJob(tx.QueryRowContext(ctx, `UPDATE print_jobs SET status=$3,actual_seconds=COALESCE($4,actual_seconds),result_notes=$5,started_at=CASE WHEN $3='printing' THEN COALESCE(started_at,$6) ELSE started_at END,completed_at=CASE WHEN $3 IN ('failed','cancelled') THEN $6 ELSE completed_at END,updated_at=GREATEST(updated_at,$6) WHERE id=$1 AND status=$2 RETURNING `+jobColumns, id, expected, v.Status, v.ActualSeconds, v.ResultNotes, now.UTC()))
+	job, err := scanJob(tx.QueryRowContext(ctx, `UPDATE print_jobs SET status=$3::text,actual_seconds=COALESCE($4,actual_seconds),result_notes=$5,started_at=CASE WHEN $3::text='printing' THEN COALESCE(started_at,$6) ELSE started_at END,completed_at=CASE WHEN $3::text IN ('failed','cancelled') THEN $6 ELSE completed_at END,updated_at=GREATEST(updated_at,$6) WHERE id=$1 AND status=$2 RETURNING `+jobColumns, id, expected, v.Status, v.ActualSeconds, v.ResultNotes, now.UTC()))
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Job{}, r.missingOrStateTx(ctx, tx, id, domain.ErrJobStateConflict)
 	}
