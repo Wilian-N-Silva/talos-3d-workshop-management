@@ -121,8 +121,8 @@ id: WP-MAINT-01
 title: Printer Maintenance History
 tasks: [MAINT-001]
 branch: work/wp-maint-01-history
-state: ready_for_pr
-pull_request: null
+state: in_review
+pull_request: https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/31
 ```
 
 Recommended `state` values:
@@ -153,23 +153,28 @@ passed. Added regressions cover malformed/over-precision hours, database integer
 bounds, optional costs/hours, all event types, UTC audit values, and HTTP 400.
 No desktop code or concurrency behavior changed in this package.
 
+Maintenance validation fixes and tests are committed at `2b47b1b`. PR #31 is
+open against `work/wp-labor-01-internal-time`; both branches are published.
+The prior statement about no open PRs describes the reconciliation baseline,
+before publication. No package was merged.
+
 ---
 
 ## Recently completed Work Packages
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
-| WP-MAINT-01 | MAINT-001 | 82b59b0 (local, unpushed) | Typed immutable printer maintenance history with optional exact lifetime hours/cost and secured API. |
-| WP-LABOR-01 | LABOR-001, LABOR-002 | 6db1a00 (local, unpushed) | Internal-only labor rate configuration and immutable non-commercial-capable Job time entries with minute totals. |
-| WP-ENERGY-01 | ENERGY-001 | a94f2aa (local, unpushed) | Exact Job energy evidence with meter/direct/estimated sources, recorder audit, tariff snapshots, and secured API. |
-| WP-JOB-02 | JOB-003, JOB-004 | cd09805 (local, unpushed) | Exact per-Job spool usage, immutable cost snapshot fields, source-aware totals, secured CRUD API, and desktop workflow. |
-| WP-JOB-01 | JOB-001, JOB-002, JOB-005, JOB-006 | fb4b840 (local, unpushed) | Non-commercial-capable manual Job lifecycle, explicit quality review, and atomic append-only audit events. |
-| WP-PRN-01 | PRN-001 | 0319efb (local, unpushed) | Non-sensitive logical printer registry with exact costing inputs and secured CRUD API. |
-| WP-CAT-03 | BOM-001 | f09a8ad (local, unpushed) | Supply BOM CRUD and exact replacement-cost preview for commercial and internal catalog items. |
-| WP-INV-02 | INV-004, INV-005, INV-006 | 6579bdf (local, unpushed) | Supply CRUD, atomic auditable movements, explicit no-negative-stock policy, and derived low-inventory UI. |
-| WP-INV-01 | INV-001, INV-002, INV-003 | 7a8bc99 (local, unpushed) | Filament materials, physical spools, append-only weighing history, and permission-aware desktop workflow. |
-| WP-CAT-02 | CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009 | 6be2c77 (local, unpushed) | Immutable design history, file roles, provenance/license tracking, and advisory license UI. |
-| WP-CAT-01 | CAT-001, CAT-002, CAT-003 | f447cb5 (local, unpushed) | Catalog item API and permission-aware desktop vertical slice; publication intentionally deferred. |
+| WP-MAINT-01 | MAINT-001 | 82b59b0 (unmerged; published in dependency chain) | Typed immutable printer maintenance history with optional exact lifetime hours/cost and secured API. |
+| WP-LABOR-01 | LABOR-001, LABOR-002 | 6db1a00 (unmerged; published in dependency chain) | Internal-only labor rate configuration and immutable non-commercial-capable Job time entries with minute totals. |
+| WP-ENERGY-01 | ENERGY-001 | a94f2aa (unmerged; published in dependency chain) | Exact Job energy evidence with meter/direct/estimated sources, recorder audit, tariff snapshots, and secured API. |
+| WP-JOB-02 | JOB-003, JOB-004 | cd09805 (unmerged; published in dependency chain) | Exact per-Job spool usage, immutable cost snapshot fields, source-aware totals, secured CRUD API, and desktop workflow. |
+| WP-JOB-01 | JOB-001, JOB-002, JOB-005, JOB-006 | fb4b840 (unmerged; published in dependency chain) | Non-commercial-capable manual Job lifecycle, explicit quality review, and atomic append-only audit events. |
+| WP-PRN-01 | PRN-001 | 0319efb (unmerged; published in dependency chain) | Non-sensitive logical printer registry with exact costing inputs and secured CRUD API. |
+| WP-CAT-03 | BOM-001 | f09a8ad (unmerged; published in dependency chain) | Supply BOM CRUD and exact replacement-cost preview for commercial and internal catalog items. |
+| WP-INV-02 | INV-004, INV-005, INV-006 | 6579bdf (unmerged; published in dependency chain) | Supply CRUD, atomic auditable movements, explicit no-negative-stock policy, and derived low-inventory UI. |
+| WP-INV-01 | INV-001, INV-002, INV-003 | 7a8bc99 (unmerged; published in dependency chain) | Filament materials, physical spools, append-only weighing history, and permission-aware desktop workflow. |
+| WP-CAT-02 | CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009 | 6be2c77 (unmerged; published in dependency chain) | Immutable design history, file roles, provenance/license tracking, and advisory license UI. |
+| WP-CAT-01 | CAT-001, CAT-002, CAT-003 | f447cb5 (unmerged; published in dependency chain) | Catalog item API and permission-aware desktop vertical slice; publication intentionally deferred. |
 | WP-FILE-01 | FILE-002, FILE-003 | c7abe0c (PR #30) | Authorized immutable upload and download through server-controlled storage. |
 | WP-DESK-03 | DESK-005, DESK-006, DESK-007 | 6c19f41 (PR #29) | Permission-aware navigation, fixed theme policy, and workshop branding. |
 | WP-DESK-02 | DESK-003, DESK-004 | df61891 (PR #28) | Native login and Windows Credential Manager session persistence. |
