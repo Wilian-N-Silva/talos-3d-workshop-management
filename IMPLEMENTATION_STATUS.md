@@ -69,6 +69,8 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | FILE-001 | verified_complete | migration `00008_files` + immutable file domain metadata + PostgreSQL repository tests | 27b64cb | UUID, unique SHA-256, safe storage key, original name, content type, size, uploader, and UTC creation time are persisted. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
+| DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
+| DESK-004 | verified_complete | Windows Credential Manager session store + expiry/restore/logout tests + Wails production build | 1c9e285 | Session credentials are server-scoped, absent from plaintext config, restored at startup, and deleted on logout. |
 
 Evidence should be concise, for example:
 
@@ -87,7 +89,7 @@ id: WP-DESK-02
 title: Desktop Login and Secure Session
 tasks: [DESK-003, DESK-004]
 branch: work/wp-desk-02-login-session
-state: in_progress
+state: ready_for_pr
 pull_request: null
 ```
 
@@ -123,6 +125,7 @@ Keep this section lightweight. Older detail remains available through Git histor
 | ID | Source | Description | Disposition |
 |---|---|---|---|
 | FUP-CFG-001 | reconciliation at 55e19a9 | Direct `go run` listener ignores `TALOS_SERVER_BIND_ADDRESS`/`TALOS_TRUSTED_LAN` and binds all interfaces; align listener policy with trusted-LAN security docs. | Future configuration/security Work Package; not expanded into authentication packages. |
+| FUP-DESK-001 | WP-DESK-02 at 1c9e285 | Desktop login does not yet persist/reuse the server-issued client device ID after local logout, so a later login registers another audit device. | Address with device/session management UI; no session-security weakening in this package. |
 
 Use this only for concrete follow-up work discovered during implementation/reconciliation. Do not turn it into a second product backlog.
 
