@@ -25,7 +25,7 @@ func TestWorkshopLogoRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open() error = %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE workshop_settings, files, sessions, bootstrap_state, users, client_devices")
+		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
 		if err := database.Close(); err != nil {
 			t.Errorf("close database: %v", err)
 		}
@@ -33,7 +33,7 @@ func TestWorkshopLogoRepositoryAgainstPostgreSQL(t *testing.T) {
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
 		t.Fatalf("truncate logo tables: %v", err)
 	}
 

@@ -140,6 +140,9 @@ func (repository *CatalogItemRepository) Update(
 // Delete removes one catalog item by UUID.
 func (repository *CatalogItemRepository) Delete(ctx context.Context, id string) error {
 	result, err := repository.database.ExecContext(ctx, "DELETE FROM catalog_items WHERE id = $1", id)
+	if foreignKeyViolation(err, "design_versions_part_fk") {
+		return domaincatalog.ErrDesignHistoryExists
+	}
 	if err != nil {
 		return fmt.Errorf("delete catalog item: %w", err)
 	}

@@ -29,6 +29,11 @@ type remoteClient interface {
 	ListCatalogItems(context.Context, string) (apiclient.CatalogPage, error)
 	CreateCatalogItem(context.Context, string, apiclient.CatalogItemInput) (apiclient.CatalogItem, error)
 	UpdateCatalogItem(context.Context, string, string, apiclient.CatalogItemInput) (apiclient.CatalogItem, error)
+	ListCatalogParts(context.Context, string, string) ([]apiclient.CatalogPart, error)
+	CreateCatalogPart(context.Context, string, string, apiclient.CatalogPartInput) (apiclient.CatalogPart, error)
+	ListDesignVersions(context.Context, string, string) ([]apiclient.DesignVersion, error)
+	CreateDesignVersion(context.Context, string, string, apiclient.DesignVersionInput) (apiclient.DesignVersion, error)
+	AttachDesignFile(context.Context, string, string, string, string) (apiclient.DesignFile, error)
 }
 
 type connectionClientFactory func(string, string) (remoteClient, error)
@@ -271,6 +276,66 @@ func (a *App) UpdateCatalogItem(id string, input apiclient.CatalogItemInput) (ap
 		return apiclient.CatalogItem{}, a.handleAuthenticatedError(baseURL, err)
 	}
 	return item, nil
+}
+
+func (a *App) ListCatalogParts(itemID string) ([]apiclient.CatalogPart, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return nil, err
+	}
+	parts, err := client.ListCatalogParts(a.applicationContext(), session.Token, itemID)
+	if err != nil {
+		return nil, a.handleAuthenticatedError(baseURL, err)
+	}
+	return parts, nil
+}
+
+func (a *App) CreateCatalogPart(itemID string, input apiclient.CatalogPartInput) (apiclient.CatalogPart, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.CatalogPart{}, err
+	}
+	part, err := client.CreateCatalogPart(a.applicationContext(), session.Token, itemID, input)
+	if err != nil {
+		return apiclient.CatalogPart{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return part, nil
+}
+
+func (a *App) ListDesignVersions(partID string) ([]apiclient.DesignVersion, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return nil, err
+	}
+	versions, err := client.ListDesignVersions(a.applicationContext(), session.Token, partID)
+	if err != nil {
+		return nil, a.handleAuthenticatedError(baseURL, err)
+	}
+	return versions, nil
+}
+
+func (a *App) CreateDesignVersion(partID string, input apiclient.DesignVersionInput) (apiclient.DesignVersion, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.DesignVersion{}, err
+	}
+	version, err := client.CreateDesignVersion(a.applicationContext(), session.Token, partID, input)
+	if err != nil {
+		return apiclient.DesignVersion{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return version, nil
+}
+
+func (a *App) AttachDesignFile(versionID, fileID, role string) (apiclient.DesignFile, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.DesignFile{}, err
+	}
+	file, err := client.AttachDesignFile(a.applicationContext(), session.Token, versionID, fileID, role)
+	if err != nil {
+		return apiclient.DesignFile{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return file, nil
 }
 
 func (a *App) authenticatedClient() (remoteClient, credentials.Session, string, error) {

@@ -93,11 +93,11 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-CAT-01
-title: Catalog Items Vertical Slice
-tasks: [CAT-001, CAT-002, CAT-003]
-branch: work/wp-cat-01-catalog-items
-state: ready_for_pr
+id: WP-CAT-02
+title: Catalog Design History
+tasks: [CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009]
+branch: work/wp-cat-02-design-versions
+state: in_progress
 pull_request: null
 ```
 
@@ -118,6 +118,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-CAT-01 | CAT-001, CAT-002, CAT-003 | f447cb5 (local, unpushed) | Catalog item API and permission-aware desktop vertical slice; publication intentionally deferred. |
 | WP-FILE-01 | FILE-002, FILE-003 | c7abe0c (PR #30) | Authorized immutable upload and download through server-controlled storage. |
 | WP-DESK-03 | DESK-005, DESK-006, DESK-007 | 6c19f41 (PR #29) | Permission-aware navigation, fixed theme policy, and workshop branding. |
 | WP-DESK-02 | DESK-003, DESK-004 | df61891 (PR #28) | Native login and Windows Credential Manager session persistence. |

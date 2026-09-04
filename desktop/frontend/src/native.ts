@@ -67,6 +67,64 @@ export interface CatalogPage {
     pagination: {limit: number; offset: number; total: number};
 }
 
+export interface CatalogPart {
+    id: string;
+    catalog_item_id: string;
+    name: string;
+    quantity: number;
+    notes: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CatalogPartInput {
+    name: string;
+    quantity: number;
+    notes: string;
+}
+
+export type DesignOrigin = 'original' | 'customer' | 'remix' | 'third_party' | 'unknown';
+export type DesignFileRole = 'source' | 'mesh' | 'print' | 'preview' | 'documentation' | 'other';
+
+export interface DesignFile {
+    file_id: string;
+    role: DesignFileRole;
+    original_name: string;
+    content_type: string;
+    size_bytes: number;
+    sha256: string;
+    created_at: string;
+}
+
+export interface DesignVersion {
+    id: string;
+    catalog_part_id: string;
+    version: string;
+    notes: string;
+    origin: DesignOrigin;
+    source_url?: string | null;
+    original_author: string;
+    license_name: string;
+    commercial_use_allowed?: boolean | null;
+    attribution_required: boolean;
+    attribution_text: string;
+    created_by: string;
+    created_at: string;
+    files: DesignFile[];
+}
+
+export interface DesignVersionInput {
+    version: string;
+    notes: string;
+    origin: DesignOrigin;
+    source_url?: string | null;
+    original_author: string;
+    license_name: string;
+    commercial_use_allowed?: boolean | null;
+    attribution_required: boolean;
+    attribution_text: string;
+}
+
 interface NativeApp {
     GetServerConnection(): Promise<ServerConnection>;
     SaveServerConnection(baseURL: string): Promise<ServerConnection>;
@@ -79,6 +137,11 @@ interface NativeApp {
     ListCatalogItems(): Promise<CatalogPage>;
     CreateCatalogItem(input: CatalogItemInput): Promise<CatalogItem>;
     UpdateCatalogItem(id: string, input: CatalogItemInput): Promise<CatalogItem>;
+    ListCatalogParts(itemID: string): Promise<CatalogPart[]>;
+    CreateCatalogPart(itemID: string, input: CatalogPartInput): Promise<CatalogPart>;
+    ListDesignVersions(partID: string): Promise<DesignVersion[]>;
+    CreateDesignVersion(partID: string, input: DesignVersionInput): Promise<DesignVersion>;
+    AttachDesignFile(versionID: string, fileID: string, role: DesignFileRole): Promise<DesignFile>;
 }
 
 declare global {
@@ -141,4 +204,24 @@ export async function createCatalogItem(input: CatalogItemInput): Promise<Catalo
 
 export async function updateCatalogItem(id: string, input: CatalogItemInput): Promise<CatalogItem> {
     return app().UpdateCatalogItem(id, input);
+}
+
+export async function listCatalogParts(itemID: string): Promise<CatalogPart[]> {
+    return app().ListCatalogParts(itemID);
+}
+
+export async function createCatalogPart(itemID: string, input: CatalogPartInput): Promise<CatalogPart> {
+    return app().CreateCatalogPart(itemID, input);
+}
+
+export async function listDesignVersions(partID: string): Promise<DesignVersion[]> {
+    return app().ListDesignVersions(partID);
+}
+
+export async function createDesignVersion(partID: string, input: DesignVersionInput): Promise<DesignVersion> {
+    return app().CreateDesignVersion(partID, input);
+}
+
+export async function attachDesignFile(versionID: string, fileID: string, role: DesignFileRole): Promise<DesignFile> {
+    return app().AttachDesignFile(versionID, fileID, role);
 }
