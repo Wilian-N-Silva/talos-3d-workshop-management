@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: 415c986
-last_reconciled_at_utc: 2026-09-02T18:11:58Z
+last_reconciled_commit: 01dc256
+last_reconciled_at_utc: 2026-09-04T02:16:59Z
 reconciled_by: Codex
 ```
 
@@ -69,6 +69,8 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | FILE-001 | verified_complete | migration `00008_files` + immutable file domain metadata + PostgreSQL repository tests | 27b64cb | UUID, unique SHA-256, safe storage key, original name, content type, size, uploader, and UTC creation time are persisted. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
+| DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
+| DESK-004 | verified_complete | Windows Credential Manager session store + expiry/restore/logout tests + Wails production build | 1c9e285 | Session credentials are server-scoped, absent from plaintext config, restored at startup, and deleted on logout. |
 
 Evidence should be concise, for example:
 
@@ -83,12 +85,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-DESK-01
-title: Desktop Server Connection Foundation
-tasks: [DESK-001, DESK-002]
-branch: work/wp-desk-01-server-connection
+id: WP-DESK-02
+title: Desktop Login and Secure Session
+tasks: [DESK-003, DESK-004]
+branch: work/wp-desk-02-login-session
 state: in_review
-pull_request: 27
+pull_request: 28
 ```
 
 Recommended `state` values:
@@ -108,6 +110,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-DESK-01 | DESK-001, DESK-002 | 01dc256 (PR #27) | Native server connection configuration and version-compatible API client. |
 | WP-SET-02 | FILE-001, SET-003 | 415c986 (PR #26) | Immutable file metadata and authorized current workshop logo. |
 | WP-SET-01 | SET-001, SET-002 | 8eeb208 (PR #25) | Persisted workshop settings and permission-aware API. |
 | WP-AUTH-02 | AUTH-008 | f1a7fd7 (PR #24) | Session/device listing and permission-aware revocation. |
@@ -122,6 +125,7 @@ Keep this section lightweight. Older detail remains available through Git histor
 | ID | Source | Description | Disposition |
 |---|---|---|---|
 | FUP-CFG-001 | reconciliation at 55e19a9 | Direct `go run` listener ignores `TALOS_SERVER_BIND_ADDRESS`/`TALOS_TRUSTED_LAN` and binds all interfaces; align listener policy with trusted-LAN security docs. | Future configuration/security Work Package; not expanded into authentication packages. |
+| FUP-DESK-001 | WP-DESK-02 at 1c9e285 | Desktop login does not yet persist/reuse the server-issued client device ID after local logout, so a later login registers another audit device. | Address with device/session management UI; no session-security weakening in this package. |
 
 Use this only for concrete follow-up work discovered during implementation/reconciliation. Do not turn it into a second product backlog.
 

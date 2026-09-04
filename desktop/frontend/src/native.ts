@@ -13,10 +13,21 @@ export interface ConnectionTestResult {
     compatibility_issue: '' | 'api_version_mismatch' | 'desktop_update_required';
 }
 
+export interface AuthenticationState {
+    authenticated: boolean;
+    user_id?: string;
+    user_name?: string;
+    email_or_username?: string;
+    expires_at?: string;
+}
+
 interface NativeApp {
     GetServerConnection(): Promise<ServerConnection>;
     SaveServerConnection(baseURL: string): Promise<ServerConnection>;
     TestServerConnection(baseURL: string): Promise<ConnectionTestResult>;
+    Login(emailOrUsername: string, password: string): Promise<AuthenticationState>;
+    GetAuthenticationState(): Promise<AuthenticationState>;
+    Logout(): Promise<void>;
 }
 
 declare global {
@@ -47,4 +58,16 @@ export async function saveServerConnection(baseURL: string): Promise<ServerConne
 
 export async function testServerConnection(baseURL: string): Promise<ConnectionTestResult> {
     return app().TestServerConnection(baseURL);
+}
+
+export async function login(emailOrUsername: string, password: string): Promise<AuthenticationState> {
+    return app().Login(emailOrUsername, password);
+}
+
+export async function getAuthenticationState(): Promise<AuthenticationState> {
+    return app().GetAuthenticationState();
+}
+
+export async function logout(): Promise<void> {
+    return app().Logout();
 }

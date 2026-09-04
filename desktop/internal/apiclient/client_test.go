@@ -2,12 +2,65 @@ package apiclient
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 )
+
+func TestClientLogsInThroughNativeHTTPClient(t *testing.T) {
+	expiresAt := time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC)
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodPost || request.URL.Path != "/api/v1/auth/login" ||
+			request.Header.Get("Content-Type") != "application/json" {
+			t.Fatalf("request = %s %s content-type %q", request.Method, request.URL.Path, request.Header.Get("Content-Type"))
+		}
+		var input LoginInput
+		if err := json.NewDecoder(request.Body).Decode(&input); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if input.EmailOrUsername != "owner" || input.Password != "correct horse battery staple" || input.Device.DisplayName != "Workshop PC" {
+			t.Fatalf("login input = %#v", input)
+		}
+		response.Header().Set("Content-Type", "application/json")
+		_, _ = response.Write([]byte(`{"token":"opaque-token","expires_at":"` + expiresAt.Format(time.RFC3339) + `","user":{"id":"user-1","name":"Owner","email_or_username":"owner","status":"active","role":"owner","permissions":["settings.manage"]},"device":{"id":"device-1","display_name":"Workshop PC","os":"Windows","app_version":"1.0.0"}}`))
+	}))
+	defer server.Close()
+	client, err := New(server.URL, "1.0.0")
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	result, err := client.Login(context.Background(), LoginInput{EmailOrUsername: "owner", Password: "correct horse battery staple", Device: LoginDevice{DisplayName: "Workshop PC", OS: "Windows", AppVersion: "1.0.0"}})
+	if err != nil || result.Token != "opaque-token" || result.User.Name != "Owner" || result.Device.ID != "device-1" || !result.ExpiresAt.Equal(expiresAt) {
+		t.Fatalf("Login() = %#v, %v", result, err)
+	}
+}
+
+func TestClientMapsLoginErrorAndRejectsIncompleteResponse(t *testing.T) {
+	tests := []struct {
+		name     string
+		status   int
+		body     string
+		wantKind ErrorKind
+	}{
+		{name: "invalid credentials", status: http.StatusUnauthorized, body: `{"error":{"code":"invalid_credentials","message":"Invalid credentials"}}`, wantKind: ErrorAPI},
+		{name: "incomplete success", status: http.StatusOK, body: `{"token":"secret"}`, wantKind: ErrorInvalidResponse},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+				response.WriteHeader(test.status)
+				_, _ = response.Write([]byte(test.body))
+			}))
+			defer server.Close()
+			client, _ := New(server.URL, "1.0.0")
+			_, err := client.Login(context.Background(), LoginInput{})
+			assertClientErrorKind(t, err, test.wantKind)
+		})
+	}
+}
 
 func TestClientChecksTypedMetadataAndCompatibility(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {

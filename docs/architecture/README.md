@@ -9,6 +9,7 @@ Current documents:
 - [Roles and permission authorization](authorization.md)
 - [Immutable file storage contract](file-storage.md)
 - [Desktop login](login.md)
+- [Desktop authentication boundary](desktop-authentication.md)
 - [Client-device persistence](client-devices.md)
 - [Desktop sessions](sessions.md)
 - [User persistence](users.md)

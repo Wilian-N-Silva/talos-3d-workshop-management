@@ -72,6 +72,43 @@
     opacity: 0.62;
 }
 
+.field-label {
+    margin-top: 18px;
+}
+
+.app-shell {
+    background: #111c2b;
+    box-sizing: border-box;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.app-shell__header {
+    align-items: center;
+    background: #172231;
+    border: 1px solid rgba(173, 205, 231, 0.18);
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    padding: 18px 22px;
+}
+
+.app-shell__account {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+}
+
+.app-shell__empty {
+    margin: 12vh auto 0;
+    max-width: 620px;
+    text-align: center;
+}
+
+.app-shell__empty p {
+    color: #aebdcb;
+}
+
 .connection-card__hint {
     color: #93a6b8;
     font-size: 0.8rem;

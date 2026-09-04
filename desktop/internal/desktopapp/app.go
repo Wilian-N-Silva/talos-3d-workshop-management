@@ -3,11 +3,16 @@ package desktopapp
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/desktop/internal/apiclient"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/desktop/internal/buildinfo"
+	"github.com/Wilian-N-Silva/talos-3d-workshop-management/desktop/internal/credentials"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/desktop/internal/serverconnection"
 )
 
@@ -16,11 +21,18 @@ type connectionStore interface {
 	Save(string) (serverconnection.Configuration, error)
 }
 
-type connectionChecker interface {
+type remoteClient interface {
 	CheckConnection(context.Context) (apiclient.ConnectionResult, error)
+	Login(context.Context, apiclient.LoginInput) (apiclient.LoginResult, error)
 }
 
-type connectionClientFactory func(string, string) (connectionChecker, error)
+type connectionClientFactory func(string, string) (remoteClient, error)
+
+type sessionStore interface {
+	Save(string, credentials.Session) error
+	Load(string) (credentials.Session, error)
+	Delete(string) error
+}
 
 // ConnectionTestResult is the safe server metadata exposed to React.
 type ConnectionTestResult struct {
@@ -34,11 +46,21 @@ type ConnectionTestResult struct {
 	CompatibilityIssue    string `json:"compatibility_issue"`
 }
 
+// AuthenticationState is safe to expose to React and deliberately omits the token.
+type AuthenticationState struct {
+	Authenticated   bool   `json:"authenticated"`
+	UserID          string `json:"user_id,omitempty"`
+	UserName        string `json:"user_name,omitempty"`
+	EmailOrUsername string `json:"email_or_username,omitempty"`
+	ExpiresAt       string `json:"expires_at,omitempty"`
+}
+
 // App owns native desktop lifecycle and server connection state.
 type App struct {
 	ctxMu          sync.RWMutex
 	ctx            context.Context
 	store          connectionStore
+	sessions       sessionStore
 	desktopVersion string
 	newClient      connectionClientFactory
 }
@@ -49,13 +71,98 @@ func New() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newApp(store, buildinfo.DesktopVersion, func(baseURL, desktopVersion string) (connectionChecker, error) {
+	return newApp(store, credentials.NewStore(), buildinfo.DesktopVersion, func(baseURL, desktopVersion string) (remoteClient, error) {
 		return apiclient.New(baseURL, desktopVersion)
 	}), nil
 }
 
-func newApp(store connectionStore, desktopVersion string, factory connectionClientFactory) *App {
-	return &App{store: store, desktopVersion: desktopVersion, newClient: factory}
+func newApp(store connectionStore, sessions sessionStore, desktopVersion string, factory connectionClientFactory) *App {
+	return &App{store: store, sessions: sessions, desktopVersion: desktopVersion, newClient: factory}
+}
+
+// Login authenticates through native Go and moves the returned token directly
+// into Windows Credential Manager without exposing it to the WebView.
+func (a *App) Login(emailOrUsername, password string) (AuthenticationState, error) {
+	configuration, err := a.store.Load()
+	if err != nil {
+		return AuthenticationState{}, fmt.Errorf("load server connection: %w", err)
+	}
+	if strings.TrimSpace(configuration.ServerBaseURL) == "" {
+		return AuthenticationState{}, errors.New("configure the workshop server before login")
+	}
+	client, err := a.newClient(configuration.ServerBaseURL, a.desktopVersion)
+	if err != nil {
+		return AuthenticationState{}, fmt.Errorf("create API client: %w", err)
+	}
+	displayName, err := os.Hostname()
+	if err != nil || strings.TrimSpace(displayName) == "" {
+		displayName = "Windows desktop"
+	}
+	result, err := client.Login(a.applicationContext(), apiclient.LoginInput{
+		EmailOrUsername: emailOrUsername,
+		Password:        password,
+		Device: apiclient.LoginDevice{
+			DisplayName: displayName,
+			OS:          runtime.GOOS,
+			AppVersion:  a.desktopVersion,
+		},
+	})
+	if err != nil {
+		return AuthenticationState{}, err
+	}
+	session := credentials.Session{
+		Token:           result.Token,
+		ExpiresAt:       result.ExpiresAt.UTC(),
+		UserID:          result.User.ID,
+		UserName:        result.User.Name,
+		EmailOrUsername: result.User.EmailOrUsername,
+	}
+	if err := a.sessions.Save(configuration.ServerBaseURL, session); err != nil {
+		return AuthenticationState{}, fmt.Errorf("secure session: %w", err)
+	}
+	return authenticationState(session), nil
+}
+
+// GetAuthenticationState restores a non-expired secure session at startup.
+func (a *App) GetAuthenticationState() (AuthenticationState, error) {
+	configuration, err := a.store.Load()
+	if err != nil {
+		return AuthenticationState{}, fmt.Errorf("load server connection: %w", err)
+	}
+	if strings.TrimSpace(configuration.ServerBaseURL) == "" {
+		return AuthenticationState{}, nil
+	}
+	session, err := a.sessions.Load(configuration.ServerBaseURL)
+	if errors.Is(err, credentials.ErrNotFound) {
+		return AuthenticationState{}, nil
+	}
+	if err != nil {
+		return AuthenticationState{}, fmt.Errorf("restore secure session: %w", err)
+	}
+	return authenticationState(session), nil
+}
+
+// Logout removes the local bearer credential. Server-side revocation remains
+// available through session management and is integrated by a later UI package.
+func (a *App) Logout() error {
+	configuration, err := a.store.Load()
+	if err != nil {
+		return fmt.Errorf("load server connection: %w", err)
+	}
+	if strings.TrimSpace(configuration.ServerBaseURL) == "" {
+		return nil
+	}
+	return a.sessions.Delete(configuration.ServerBaseURL)
+}
+
+func authenticationState(session credentials.Session) AuthenticationState {
+	return AuthenticationState{
+		Authenticated:   true,
+		UserID:          session.UserID,
+		UserName:        session.UserName,
+		EmailOrUsername: session.EmailOrUsername,
+		ExpiresAt:       session.ExpiresAt.UTC().Format("2006-01-02T15:04:05Z07:00"),
+	}
 }
 
 // Startup stores the Wails lifecycle context for native operations.

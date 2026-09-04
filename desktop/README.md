@@ -35,8 +35,20 @@ contains no database or session credentials.
 
 React invokes Wails methods only. The native Go client calls
 `GET /api/v1/meta` with an eight-second timeout, maps remote errors, and checks
-both API version and the server's minimum desktop version. Authenticated and
-business endpoints are introduced by later Work Packages.
+both API version and the server's minimum desktop version.
+
+## Login and session storage
+
+The login form passes the user identifier and password to a Wails-bound native
+Go operation. Go calls `POST /api/v1/auth/login`; React neither calls the server
+directly nor receives the returned bearer token. The native layer stores the
+token and its expiry in a server-specific Windows Credential Manager generic
+credential. The plaintext connection file never contains session data.
+
+At startup, a non-expired credential restores safe user metadata and opens the
+application shell. Logout deletes the local credential. Server-side session
+revocation UI and permission-aware navigation are introduced by later Work
+Packages.
 
 ## Production build
 
