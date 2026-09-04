@@ -202,7 +202,7 @@ const originLabels: Record<DesignOrigin, string> = {
 };
 
 const fileRoleLabels: Record<DesignFileRole, string> = {
-    source: 'Fonte', mesh: 'Malha', print: 'ImpressÃ£o', preview: 'PrÃ©via', documentation: 'DocumentaÃ§Ã£o', other: 'Outro',
+    source: 'Fonte', mesh: 'Malha', print: 'Impressão', preview: 'Prévia', documentation: 'Documentação', other: 'Outro',
 };
 
 type VersionDraft = {
@@ -287,11 +287,11 @@ function DesignHistory({item, canWrite, onError}: {item: CatalogItem; canWrite: 
     }
 
     return <section className="design-history" aria-labelledby="design-history-title">
-        <div className="design-history__heading"><div><h3 id="design-history-title">Partes e designs</h3><p>VersÃµes preservam a procedÃªncia e os arquivos usados.</p></div></div>
-        {item.sellable && hasDenied && <p className="feedback feedback--error" role="status"><strong>Venda nÃ£o autorizada.</strong> A versÃ£o atual de ao menos uma parte nega uso comercial. O aviso nÃ£o bloqueia uso interno ou protÃ³tipos.</p>}
-        {item.sellable && !hasDenied && hasUnknown && <p className="feedback feedback--warning" role="status"><strong>PermissÃ£o comercial desconhecida.</strong> Cadastre a licenÃ§a de todas as partes antes de vender. Uso interno ou de protÃ³tipo continua permitido.</p>}
+        <div className="design-history__heading"><div><h3 id="design-history-title">Partes e designs</h3><p>Versões preservam a procedência e os arquivos usados.</p></div></div>
+        {item.sellable && hasDenied && <p className="feedback feedback--error" role="status"><strong>Venda não autorizada.</strong> A versão atual de ao menos uma parte nega uso comercial. O aviso não bloqueia uso interno ou protótipos.</p>}
+        {item.sellable && !hasDenied && hasUnknown && <p className="feedback feedback--warning" role="status"><strong>Permissão comercial desconhecida.</strong> Cadastre a licença de todas as partes antes de vender. Uso interno ou de protótipo continua permitido.</p>}
         <div className="design-history__parts">
-            {parts.map((part) => <button key={part.id} type="button" className={part.id === selectedPartID ? 'design-tab design-tab--selected' : 'design-tab'} onClick={() => setSelectedPartID(part.id)}>{part.name} <small>Ã—{part.quantity}</small></button>)}
+            {parts.map((part) => <button key={part.id} type="button" className={part.id === selectedPartID ? 'design-tab design-tab--selected' : 'design-tab'} onClick={() => setSelectedPartID(part.id)}>{part.name} <small>×{part.quantity}</small></button>)}
         </div>
         {canWrite && <form className="design-inline-form" onSubmit={addPart}>
             <label>Nova parte<input required maxLength={200} value={partName} disabled={busy} onChange={(event) => setPartName(event.target.value)} /></label>
@@ -299,29 +299,29 @@ function DesignHistory({item, canWrite, onError}: {item: CatalogItem; canWrite: 
             <button className="button button--secondary" disabled={busy} type="submit">Adicionar parte</button>
         </form>}
         {selectedPart && <div className="design-versions">
-            <h4>HistÃ³rico de {selectedPart.name}</h4>
-            {versions.length === 0 && <p>Nenhuma versÃ£o cadastrada.</p>}
+            <h4>Histórico de {selectedPart.name}</h4>
+            {versions.length === 0 && <p>Nenhuma versão cadastrada.</p>}
             {versions.map((version) => <article className="design-version" key={version.id}>
                 <div><strong>{version.version}</strong><span>{originLabels[version.origin]}</span></div>
-                <p>{version.license_name || 'LicenÃ§a nÃ£o informada'} Â· {version.commercial_use_allowed == null ? 'uso comercial desconhecido' : version.commercial_use_allowed ? 'uso comercial permitido' : 'uso comercial negado'}</p>
+                <p>{version.license_name || 'Licença não informada'} · {version.commercial_use_allowed == null ? 'uso comercial desconhecido' : version.commercial_use_allowed ? 'uso comercial permitido' : 'uso comercial negado'}</p>
                 {version.source_url && <a href={version.source_url} target="_blank" rel="noreferrer">Abrir origem</a>}
-                <ul>{version.files.map((file) => <li key={`${file.file_id}-${file.role}`}><span>{fileRoleLabels[file.role]}</span> {file.original_name}{file.role === 'print' && <strong> Â· arquivo de impressÃ£o</strong>}</li>)}</ul>
+                <ul>{version.files.map((file) => <li key={`${file.file_id}-${file.role}`}><span>{fileRoleLabels[file.role]}</span> {file.original_name}{file.role === 'print' && <strong> · arquivo de impressão</strong>}</li>)}</ul>
             </article>)}
             {canWrite && <>
                 <form className="catalog-form design-version-form" onSubmit={addVersion}>
-                    <h4>Nova versÃ£o imutÃ¡vel</h4>
-                    <div className="catalog-form__row"><label>VersÃ£o<input required maxLength={100} value={versionDraft.version} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, version: event.target.value})} /></label><label>Origem<select value={versionDraft.origin} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, origin: event.target.value as DesignOrigin})}>{Object.entries(originLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>
+                    <h4>Nova versão imutável</h4>
+                    <div className="catalog-form__row"><label>Versão<input required maxLength={100} value={versionDraft.version} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, version: event.target.value})} /></label><label>Origem<select value={versionDraft.origin} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, origin: event.target.value as DesignOrigin})}>{Object.entries(originLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>
                     <label>URL de origem<input type="url" value={versionDraft.sourceURL} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, sourceURL: event.target.value})} /></label>
-                    <div className="catalog-form__row"><label>Autor original<input maxLength={200} value={versionDraft.originalAuthor} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, originalAuthor: event.target.value})} /></label><label>LicenÃ§a<input maxLength={200} value={versionDraft.licenseName} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, licenseName: event.target.value})} /></label></div>
+                    <div className="catalog-form__row"><label>Autor original<input maxLength={200} value={versionDraft.originalAuthor} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, originalAuthor: event.target.value})} /></label><label>Licença<input maxLength={200} value={versionDraft.licenseName} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, licenseName: event.target.value})} /></label></div>
                     <label>Uso comercial<select value={versionDraft.commercialPermission} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, commercialPermission: event.target.value as VersionDraft['commercialPermission']})}><option value="unknown">Desconhecido</option><option value="allowed">Permitido</option><option value="denied">Negado</option></select></label>
-                    <label className="catalog-form__checkbox"><input type="checkbox" checked={versionDraft.attributionRequired} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, attributionRequired: event.target.checked})} />Exige atribuiÃ§Ã£o</label>
-                    {versionDraft.attributionRequired && <label>Texto de atribuiÃ§Ã£o<input required maxLength={4000} value={versionDraft.attributionText} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, attributionText: event.target.value})} /></label>}
+                    <label className="catalog-form__checkbox"><input type="checkbox" checked={versionDraft.attributionRequired} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, attributionRequired: event.target.checked})} />Exige atribuição</label>
+                    {versionDraft.attributionRequired && <label>Texto de atribuição<input required maxLength={4000} value={versionDraft.attributionText} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, attributionText: event.target.value})} /></label>}
                     <label>Notas<textarea maxLength={10000} value={versionDraft.notes} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, notes: event.target.value})} /></label>
-                    <button className="button button--primary" disabled={busy} type="submit">Criar versÃ£o</button>
+                    <button className="button button--primary" disabled={busy} type="submit">Criar versão</button>
                 </form>
                 {versions[0] && <form className="design-inline-form" onSubmit={linkFile}>
                     <label>ID de arquivo existente<input required value={fileID} disabled={busy} onChange={(event) => setFileID(event.target.value)} /></label>
-                    <label>FunÃ§Ã£o<select value={fileRole} disabled={busy} onChange={(event) => setFileRole(event.target.value as DesignFileRole)}>{Object.entries(fileRoleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+                    <label>Função<select value={fileRole} disabled={busy} onChange={(event) => setFileRole(event.target.value as DesignFileRole)}>{Object.entries(fileRoleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
                     <button className="button button--secondary" disabled={busy} type="submit">Vincular ao design atual</button>
                 </form>}
             </>}

@@ -113,6 +113,39 @@
     text-align: left;
 }
 
+.inventory-workspace {
+    margin: 52px auto 0;
+    max-width: 1180px;
+    text-align: left;
+}
+
+.inventory-layout {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.5fr);
+    margin-top: 22px;
+}
+
+.measurement-history {
+    display: grid;
+    gap: 9px;
+    list-style: none;
+    padding: 0;
+}
+
+.measurement-history li {
+    background: var(--surface-subtle);
+    border-radius: 9px;
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+}
+
+.measurement-history span,
+.measurement-history small {
+    color: var(--text-muted);
+}
+
 .catalog-workspace__toolbar,
 .catalog-detail__heading {
     align-items: center;
@@ -540,6 +573,7 @@
     }
 
     .catalog-layout,
+    .inventory-layout,
     .catalog-detail__facts,
     .catalog-form__row {
         grid-template-columns: 1fr;

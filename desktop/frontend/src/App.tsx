@@ -2,6 +2,7 @@ import {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import {WindowSetTitle} from '../wailsjs/runtime/runtime';
 import './App.css';
 import {CatalogWorkspace} from './CatalogWorkspace';
+import {InventoryWorkspace} from './InventoryWorkspace';
 import {
     AuthenticationState,
     ConnectionTestResult,
@@ -213,6 +214,9 @@ function App() {
                     </header>
                     <PermissionGate permission="catalog.read">
                         <CatalogWorkspace canWrite={(authentication.permissions ?? []).includes('catalog.write')} />
+                    </PermissionGate>
+                    <PermissionGate permission="inventory.read">
+                        <InventoryWorkspace canWrite={(authentication.permissions ?? []).includes('inventory.write')} />
                     </PermissionGate>
                     {feedback && <p className={`feedback feedback--${feedback.tone}`} role="status">{feedback.message}</p>}
                 </main>

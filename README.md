@@ -98,6 +98,11 @@ immutable version history at `/api/v1/catalog/parts/{partID}/design-versions`, a
 role-based immutable file links at
 `/api/v1/catalog/design-versions/{versionID}/files`.
 
+Filament inventory APIs expose material and spool CRUD under
+`/api/v1/inventory/materials` and `/api/v1/inventory/spools`. Append-only spool
+weighings use `/api/v1/inventory/spools/{spoolID}/measurements`; exact physical
+values are JSON decimal strings and persisted as PostgreSQL `NUMERIC`.
+
 ## Authentication and access control
 
 First-owner setup is available through `GET /api/setup/status` and

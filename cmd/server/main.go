@@ -15,6 +15,7 @@ import (
 	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
 	applicationcatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/catalog"
 	applicationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/files"
+	applicationinventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/inventory"
 	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
@@ -113,6 +114,11 @@ func main() {
 		logger.Printf("server startup failed: initialize catalog design service: %v", err)
 		os.Exit(1)
 	}
+	filamentInventoryService, err := applicationinventory.NewFilamentService(postgres.NewFilamentInventoryRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize filament inventory service: %v", err)
+		os.Exit(1)
+	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
 	if serverConfig.UploadMaxBytes < maximumLogoBytes {
 		maximumLogoBytes = serverConfig.UploadMaxBytes
@@ -199,6 +205,7 @@ func main() {
 		serverConfig.UploadMaxBytes,
 		catalogItemService,
 		catalogDesignService,
+		filamentInventoryService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -220,6 +227,7 @@ func newHandler(
 	maximumFileBytes int64,
 	catalogItems httpplatform.CatalogItemService,
 	catalogDesigns httpplatform.CatalogDesignService,
+	filamentInventory httpplatform.FilamentInventoryService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -234,6 +242,7 @@ func newHandler(
 	httpplatform.RegisterFiles(apiRouter, authentication, files, maximumFileBytes)
 	httpplatform.RegisterCatalogItems(apiRouter, authentication, catalogItems)
 	httpplatform.RegisterCatalogDesigns(apiRouter, authentication, catalogDesigns)
+	httpplatform.RegisterFilamentInventory(apiRouter, authentication, filamentInventory)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux
