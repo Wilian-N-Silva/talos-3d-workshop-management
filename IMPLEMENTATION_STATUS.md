@@ -92,8 +92,8 @@ id: WP-DESK-03
 title: Permission-Aware Branded Desktop Shell
 tasks: [DESK-005, DESK-006, DESK-007]
 branch: work/wp-desk-03-application-shell
-state: ready_for_pr
-pull_request: null
+state: in_review
+pull_request: 29
 ```
 
 Recommended `state` values:
