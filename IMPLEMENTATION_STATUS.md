@@ -85,12 +85,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-DESK-02
-title: Desktop Login and Secure Session
-tasks: [DESK-003, DESK-004]
-branch: work/wp-desk-02-login-session
-state: in_review
-pull_request: 28
+id: WP-DESK-03
+title: Permission-Aware Branded Desktop Shell
+tasks: [DESK-005, DESK-006, DESK-007]
+branch: work/wp-desk-03-application-shell
+state: in_progress
+pull_request: null
 ```
 
 Recommended `state` values:
@@ -110,6 +110,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-DESK-02 | DESK-003, DESK-004 | df61891 (PR #28) | Native login and Windows Credential Manager session persistence. |
 | WP-DESK-01 | DESK-001, DESK-002 | 01dc256 (PR #27) | Native server connection configuration and version-compatible API client. |
 | WP-SET-02 | FILE-001, SET-003 | 415c986 (PR #26) | Immutable file metadata and authorized current workshop logo. |
 | WP-SET-01 | SET-001, SET-002 | 8eeb208 (PR #25) | Persisted workshop settings and permission-aware API. |

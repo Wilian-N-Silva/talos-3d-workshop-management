@@ -4,11 +4,14 @@ package apiclient
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -20,6 +23,7 @@ const (
 	ExpectedAPIVersion  = "v1"
 	defaultTimeout      = 8 * time.Second
 	maximumResponseSize = 1024 * 1024
+	maximumLogoSize     = 5 * 1024 * 1024
 )
 
 // ErrorKind groups failures into stable categories for the desktop application layer.
@@ -99,6 +103,22 @@ type LoginUser struct {
 	Status          string   `json:"status"`
 	Role            string   `json:"role"`
 	Permissions     []string `json:"permissions"`
+}
+
+// Branding contains safe public workshop identity for pre-login UI.
+type Branding struct {
+	WorkshopName string `json:"workshop_name"`
+	LogoDataURL  string `json:"logo_data_url,omitempty"`
+}
+
+// WorkshopSettings is the authenticated shell configuration contract.
+type WorkshopSettings struct {
+	WorkshopName    string  `json:"workshop_name"`
+	LogoURL         *string `json:"logo_url"`
+	DefaultLocale   string  `json:"default_locale"`
+	DefaultCurrency string  `json:"default_currency"`
+	DisplayTimezone string  `json:"display_timezone"`
+	DefaultTheme    string  `json:"default_theme"`
 }
 
 type httpDoer interface {
@@ -243,6 +263,105 @@ func (client *Client) Login(ctx context.Context, input LoginInput) (LoginResult,
 		return LoginResult{}, invalidResponseError("Server login response is incomplete", nil)
 	}
 	return result, nil
+}
+
+// FetchBranding loads public workshop metadata and its optional validated logo.
+func (client *Client) FetchBranding(ctx context.Context) (Branding, error) {
+	connection, err := client.CheckConnection(ctx)
+	if err != nil {
+		return Branding{}, err
+	}
+	branding := Branding{WorkshopName: connection.WorkshopName}
+	if connection.LogoURL == nil || strings.TrimSpace(*connection.LogoURL) == "" {
+		return branding, nil
+	}
+	base, err := url.Parse(client.baseURL)
+	if err != nil {
+		return Branding{}, invalidResponseError("Unable to resolve workshop logo", err)
+	}
+	reference, err := url.Parse(*connection.LogoURL)
+	if err != nil {
+		return Branding{}, invalidResponseError("Server returned an invalid logo URL", err)
+	}
+	resolved := base.ResolveReference(reference)
+	if !strings.EqualFold(resolved.Scheme, base.Scheme) || !strings.EqualFold(resolved.Host, base.Host) {
+		return Branding{}, invalidResponseError("Server returned a cross-origin logo URL", nil)
+	}
+	requestContext, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+	request, err := http.NewRequestWithContext(requestContext, http.MethodGet, resolved.String(), nil)
+	if err != nil {
+		return Branding{}, invalidResponseError("Unable to create logo request", err)
+	}
+	request.Header.Set("Accept", "image/png, image/jpeg")
+	response, err := client.httpClient.Do(request)
+	if err != nil {
+		return Branding{}, mapTransportError(requestContext, err, "Workshop logo request timed out")
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(response.Body, maximumLogoSize+1))
+	if err != nil {
+		return Branding{}, invalidResponseError("Unable to read workshop logo", err)
+	}
+	if len(body) > maximumLogoSize {
+		return Branding{}, invalidResponseError("Workshop logo is too large", nil)
+	}
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return Branding{}, mapAPIError(response.StatusCode, body)
+	}
+	contentType, _, err := mime.ParseMediaType(response.Header.Get("Content-Type"))
+	if err != nil || (contentType != "image/png" && contentType != "image/jpeg") {
+		return Branding{}, invalidResponseError("Server returned an invalid workshop logo", err)
+	}
+	branding.LogoDataURL = "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(body)
+	return branding, nil
+}
+
+// GetWorkshopSettings proves the authenticated request boundary used by the
+// shell. The bearer token remains an argument inside native Go only.
+func (client *Client) GetWorkshopSettings(ctx context.Context, token string) (WorkshopSettings, error) {
+	if strings.TrimSpace(token) == "" {
+		return WorkshopSettings{}, errors.New("missing session token")
+	}
+	requestContext, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+	request, err := http.NewRequestWithContext(requestContext, http.MethodGet, client.baseURL+"/api/v1/settings", nil)
+	if err != nil {
+		return WorkshopSettings{}, invalidResponseError("Unable to create settings request", err)
+	}
+	request.Header.Set("Accept", "application/json")
+	request.Header.Set("Authorization", "Bearer "+token)
+	response, err := client.httpClient.Do(request)
+	if err != nil {
+		return WorkshopSettings{}, mapTransportError(requestContext, err, "Workshop settings request timed out")
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(response.Body, maximumResponseSize+1))
+	if err != nil {
+		return WorkshopSettings{}, invalidResponseError("Unable to read workshop settings", err)
+	}
+	if len(body) > maximumResponseSize {
+		return WorkshopSettings{}, invalidResponseError("Server response is too large", nil)
+	}
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return WorkshopSettings{}, mapAPIError(response.StatusCode, body)
+	}
+	var settings WorkshopSettings
+	if err := json.Unmarshal(body, &settings); err != nil {
+		return WorkshopSettings{}, invalidResponseError("Server returned invalid workshop settings", err)
+	}
+	if strings.TrimSpace(settings.WorkshopName) == "" ||
+		(settings.DefaultTheme != "light" && settings.DefaultTheme != "dark" && settings.DefaultTheme != "system") {
+		return WorkshopSettings{}, invalidResponseError("Server workshop settings are incomplete", nil)
+	}
+	return settings, nil
+}
+
+func mapTransportError(ctx context.Context, err error, timeoutMessage string) error {
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {
+		return &ClientError{Kind: ErrorTimeout, Message: timeoutMessage, cause: err}
+	}
+	return &ClientError{Kind: ErrorNetwork, Message: "Unable to connect to server", cause: err}
 }
 
 type errorEnvelope struct {

@@ -62,6 +62,58 @@ func TestClientMapsLoginErrorAndRejectsIncompleteResponse(t *testing.T) {
 	}
 }
 
+func TestClientFetchesPublicBrandingAndValidatedLogo(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/api/v1/meta":
+			_, _ = response.Write([]byte(`{"api_version":"v1","server_version":"1.0.0","workshop_name":"Talos Lab","logo_url":"/api/v1/meta/logo","minimum_desktop_version":"0.0.0"}`))
+		case "/api/v1/meta/logo":
+			response.Header().Set("Content-Type", "image/png")
+			_, _ = response.Write([]byte("png-data"))
+		default:
+			http.NotFound(response, request)
+		}
+	}))
+	defer server.Close()
+	client, _ := New(server.URL, "1.0.0")
+	branding, err := client.FetchBranding(context.Background())
+	if err != nil || branding.WorkshopName != "Talos Lab" || branding.LogoDataURL != "data:image/png;base64,cG5nLWRhdGE=" {
+		t.Fatalf("FetchBranding() = %#v, %v", branding, err)
+	}
+}
+
+func TestClientRejectsCrossOriginBrandingLogo(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+		_, _ = response.Write([]byte(`{"api_version":"v1","server_version":"1.0.0","workshop_name":"Talos Lab","logo_url":"https://untrusted.example/logo.png","minimum_desktop_version":"0.0.0"}`))
+	}))
+	defer server.Close()
+	client, _ := New(server.URL, "1.0.0")
+	_, err := client.FetchBranding(context.Background())
+	assertClientErrorKind(t, err, ErrorInvalidResponse)
+}
+
+func TestClientSendsBearerForSettingsAndMapsAuthorizationErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		if request.Header.Get("Authorization") != "Bearer secure-token" {
+			response.WriteHeader(http.StatusUnauthorized)
+			_, _ = response.Write([]byte(`{"error":{"code":"unauthenticated","message":"Authentication required"}}`))
+			return
+		}
+		_, _ = response.Write([]byte(`{"workshop_name":"Talos Lab","logo_url":null,"default_locale":"pt-BR","default_currency":"BRL","display_timezone":"America/Sao_Paulo","default_theme":"system"}`))
+	}))
+	defer server.Close()
+	client, _ := New(server.URL, "1.0.0")
+	settings, err := client.GetWorkshopSettings(context.Background(), "secure-token")
+	if err != nil || settings.WorkshopName != "Talos Lab" || settings.DefaultTheme != "system" {
+		t.Fatalf("GetWorkshopSettings() = %#v, %v", settings, err)
+	}
+	_, err = client.GetWorkshopSettings(context.Background(), "wrong-token")
+	var clientError *ClientError
+	if !errors.As(err, &clientError) || clientError.StatusCode != http.StatusUnauthorized || clientError.Code != "unauthenticated" {
+		t.Fatalf("GetWorkshopSettings() unauthorized error = %#v", err)
+	}
+}
+
 func TestClientChecksTypedMetadataAndCompatibility(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodGet || request.URL.Path != "/talos/api/v1/meta" || request.Header.Get("Accept") != "application/json" {

@@ -23,8 +23,9 @@ React
 React contains no HTTP client for the workshop server. The native client owns
 the base URL, an eight-second request timeout, bounded response reads, and the
 common mapping for network, timeout, API-envelope, and invalid-response
-failures. The client exposes public metadata and login operations; authenticated
-business endpoints remain later task scope.
+failures. The client exposes public metadata and login operations. The shell
+uses authenticated `GET /api/v1/settings` to validate its bearer session and
+obtain the workshop default theme; other business endpoints remain later scope.
 
 Compatibility requires API version `v1` and a desktop semantic version at
 least as new as `minimum_desktop_version`. The desktop build version defaults
@@ -36,3 +37,7 @@ Login credentials follow the same native path through
 `POST /api/v1/auth/login`. The password exists only for that local operation,
 and the resulting token is handed directly to Windows secure credential storage
 without crossing the Wails response boundary.
+
+Public workshop branding follows the same native path. Logo URLs returned by
+metadata must resolve to the configured server origin, responses are
+size-bounded, and only PNG/JPEG media types become data URLs for React.

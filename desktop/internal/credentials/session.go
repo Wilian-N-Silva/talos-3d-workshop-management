@@ -21,6 +21,9 @@ type Session struct {
 	UserID          string    `json:"user_id"`
 	UserName        string    `json:"user_name"`
 	EmailOrUsername string    `json:"email_or_username"`
+	Role            string    `json:"role"`
+	Permissions     []string  `json:"permissions"`
+	DeviceID        string    `json:"device_id"`
 }
 
 type backend interface {
@@ -49,9 +52,7 @@ func newStore(backend backend, now func() time.Time) *Store {
 
 // Save validates and securely persists a session.
 func (store *Store) Save(serverBaseURL string, session Session) error {
-	if strings.TrimSpace(session.Token) == "" || strings.TrimSpace(session.UserID) == "" ||
-		strings.TrimSpace(session.UserName) == "" || strings.TrimSpace(session.EmailOrUsername) == "" ||
-		session.ExpiresAt.IsZero() {
+	if !validSession(session) {
 		return errors.New("invalid session credential")
 	}
 	payload, err := json.Marshal(session)
@@ -76,7 +77,7 @@ func (store *Store) Load(serverBaseURL string) (Session, error) {
 	if err := json.Unmarshal(payload, &session); err != nil {
 		return Session{}, fmt.Errorf("decode session credential: %w", err)
 	}
-	if strings.TrimSpace(session.Token) == "" || session.ExpiresAt.IsZero() {
+	if !validSession(session) {
 		return Session{}, errors.New("invalid session credential")
 	}
 	if !session.ExpiresAt.After(store.now().UTC()) {
@@ -86,6 +87,13 @@ func (store *Store) Load(serverBaseURL string) (Session, error) {
 		return Session{}, ErrNotFound
 	}
 	return session, nil
+}
+
+func validSession(session Session) bool {
+	return strings.TrimSpace(session.Token) != "" && strings.TrimSpace(session.UserID) != "" &&
+		strings.TrimSpace(session.UserName) != "" && strings.TrimSpace(session.EmailOrUsername) != "" &&
+		strings.TrimSpace(session.Role) != "" && strings.TrimSpace(session.DeviceID) != "" &&
+		session.Permissions != nil && !session.ExpiresAt.IsZero()
 }
 
 // Delete removes the session for a server and is idempotent.
