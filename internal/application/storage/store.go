@@ -28,6 +28,9 @@ type StoredObject struct {
 	Key       ObjectKey
 	SHA256    SHA256Digest
 	SizeBytes int64
+	// Created is true only when this Put published the object. Callers use it
+	// to avoid deleting a pre-existing deduplicated object during compensation.
+	Created bool
 }
 
 // Store persists and opens immutable objects.

@@ -47,6 +47,9 @@ func TestLocalFilesystemStoragePutAndOpen(t *testing.T) {
 	if stored.SizeBytes != int64(len(content)) {
 		t.Fatalf("SizeBytes = %d, want %d", stored.SizeBytes, len(content))
 	}
+	if !stored.Created {
+		t.Fatal("first Put() Created = false")
+	}
 
 	expectedPath := filepath.Join(dataDirectory, "objects", stored.Key.String()[:2], stored.Key.String())
 	if _, err := os.Stat(expectedPath); err != nil {
@@ -100,8 +103,12 @@ func TestLocalFilesystemStorageDeduplicatesConcurrentWrites(t *testing.T) {
 	}
 	var expectedKey string
 	resultCount := 0
+	createdCount := 0
 	for stored := range results {
 		resultCount++
+		if stored.Created {
+			createdCount++
+		}
 		if expectedKey == "" {
 			expectedKey = stored.Key.String()
 		}
@@ -111,6 +118,9 @@ func TestLocalFilesystemStorageDeduplicatesConcurrentWrites(t *testing.T) {
 	}
 	if resultCount != writers {
 		t.Fatalf("successful Put() results = %d, want %d", resultCount, writers)
+	}
+	if createdCount != 1 {
+		t.Fatalf("created results = %d, want 1", createdCount)
 	}
 
 	shardEntries, err := os.ReadDir(filepath.Join(store.objectsDirectory, expectedKey[:2]))

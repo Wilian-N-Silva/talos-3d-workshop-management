@@ -88,12 +88,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-DESK-03
-title: Permission-Aware Branded Desktop Shell
-tasks: [DESK-005, DESK-006, DESK-007]
-branch: work/wp-desk-03-application-shell
-state: in_review
-pull_request: 29
+id: WP-FILE-01
+title: Authorized Immutable File Transfer
+tasks: [FILE-002, FILE-003]
+branch: work/wp-file-01-authorized-transfer
+state: in_progress
+pull_request: null
 ```
 
 Recommended `state` values:
@@ -113,6 +113,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-DESK-03 | DESK-005, DESK-006, DESK-007 | 6c19f41 (PR #29) | Permission-aware navigation, fixed theme policy, and workshop branding. |
 | WP-DESK-02 | DESK-003, DESK-004 | df61891 (PR #28) | Native login and Windows Credential Manager session persistence. |
 | WP-DESK-01 | DESK-001, DESK-002 | 01dc256 (PR #27) | Native server connection configuration and version-compatible API client. |
 | WP-SET-02 | FILE-001, SET-003 | 415c986 (PR #26) | Immutable file metadata and authorized current workshop logo. |
