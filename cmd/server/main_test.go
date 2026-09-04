@@ -14,9 +14,11 @@ import (
 	"time"
 
 	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
+	applicationcatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/catalog"
 	applicationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/files"
 	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	domainauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
+	domaincatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/catalog"
 	domainfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/files"
 	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
@@ -40,6 +42,7 @@ var testSessionManagementService = sessionManagementServiceStub{}
 var testWorkshopSettingsService = workshopSettingsServiceStub{}
 var testWorkshopLogoService = workshopLogoServiceStub{}
 var testFileTransferService = fileTransferServiceStub{}
+var testCatalogItemService = catalogItemServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -59,6 +62,7 @@ type workshopSettingsServiceStub struct{}
 
 type workshopLogoServiceStub struct{}
 type fileTransferServiceStub struct{}
+type catalogItemServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -200,8 +204,8 @@ func TestHandlerRegistersSetupStatus(t *testing.T) {
 	}
 }
 
-func TestHandlerHasNoProductRoutes(t *testing.T) {
-	request := httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil)
+func TestHandlerRejectsUnknownProductRoutes(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/catalog/unknown", nil)
 	response := httptest.NewRecorder()
 
 	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
@@ -305,6 +309,29 @@ func (fileTransferServiceStub) OpenFile(context.Context, string) (applicationfil
 	return applicationfiles.Download{}, domainfiles.ErrFileNotFound
 }
 
+func (catalogItemServiceStub) Create(context.Context, domaincatalog.Values) (domaincatalog.Item, error) {
+	return domaincatalog.Item{}, nil
+}
+
+func (catalogItemServiceStub) Get(context.Context, string) (domaincatalog.Item, error) {
+	return domaincatalog.Item{}, domaincatalog.ErrItemNotFound
+}
+
+func (catalogItemServiceStub) List(_ context.Context, filter domaincatalog.ListFilter) (domaincatalog.Page, error) {
+	if filter.Limit == 0 {
+		filter.Limit = applicationcatalog.DefaultListLimit
+	}
+	return domaincatalog.Page{Items: []domaincatalog.Item{}, Limit: filter.Limit, Offset: filter.Offset}, nil
+}
+
+func (catalogItemServiceStub) Update(context.Context, string, domaincatalog.Values) (domaincatalog.Item, error) {
+	return domaincatalog.Item{}, nil
+}
+
+func (catalogItemServiceStub) Delete(context.Context, string) error {
+	return nil
+}
+
 func TestHandlerRegistersFiles(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
 	request.Header.Set("Authorization", "Bearer test-token")
@@ -314,6 +341,18 @@ func TestHandlerRegistersFiles(t *testing.T) {
 
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusNotFound, response.Body.String())
+	}
+}
+
+func TestHandlerRegistersCatalogItems(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.CatalogItemsPath, nil)
+	request.Header.Set("Authorization", "Bearer test-token")
+	response := httptest.NewRecorder()
+
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
 	}
 }
 
@@ -336,5 +375,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		applicationsettings.DefaultMaximumLogoBytes,
 		testFileTransferService,
 		1024,
+		testCatalogItemService,
 	)
 }

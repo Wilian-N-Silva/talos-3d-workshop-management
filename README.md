@@ -127,6 +127,12 @@ the first canonical metadata record. Downloads are authorization-checked and
 streamed as safe attachments; filesystem paths are never derived from original
 filenames.
 
+Catalog items use `/api/v1/catalog/items`. Read operations require
+`catalog.read`; create, replace, and delete operations require `catalog.write`.
+The list endpoint supports `purpose`, `status`, `sellable`, `tag`, and `q`
+filters with bounded `limit`/`offset` pagination. Tags are normalized lowercase
+strings stored as a JSONB array, and items can be archived without deletion.
+
 The Windows desktop starts with an editable server connection screen. It
 persists only a credential-free HTTP(S) base URL in the current user's config
 directory and tests the public `/api/v1/meta` contract through the native Go

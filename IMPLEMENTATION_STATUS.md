@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: 6c19f41
-last_reconciled_at_utc: 2026-09-04T03:18:28Z
+last_reconciled_commit: c7abe0c
+last_reconciled_at_utc: 2026-09-04T03:36:46Z
 reconciled_by: Codex
 ```
 
@@ -90,12 +90,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-FILE-01
-title: Authorized Immutable File Transfer
-tasks: [FILE-002, FILE-003]
-branch: work/wp-file-01-authorized-transfer
-state: in_review
-pull_request: 30
+id: WP-CAT-01
+title: Catalog Item Foundation
+tasks: [CAT-001, CAT-002]
+branch: work/wp-cat-01-catalog-items
+state: in_progress
+pull_request: null
 ```
 
 Recommended `state` values:
@@ -115,6 +115,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-FILE-01 | FILE-002, FILE-003 | c7abe0c (PR #30) | Authorized immutable upload and download through server-controlled storage. |
 | WP-DESK-03 | DESK-005, DESK-006, DESK-007 | 6c19f41 (PR #29) | Permission-aware navigation, fixed theme policy, and workshop branding. |
 | WP-DESK-02 | DESK-003, DESK-004 | df61891 (PR #28) | Native login and Windows Credential Manager session persistence. |
 | WP-DESK-01 | DESK-001, DESK-002 | 01dc256 (PR #27) | Native server connection configuration and version-compatible API client. |
