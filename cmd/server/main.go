@@ -13,6 +13,7 @@ import (
 	"time"
 
 	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
+	applicationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/files"
 	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
@@ -90,6 +91,15 @@ func main() {
 	objectStore, err := filestorage.NewLocalFilesystemStorage(serverConfig.DataDirectory)
 	if err != nil {
 		logger.Printf("server startup failed: initialize object storage: %v", err)
+		os.Exit(1)
+	}
+	fileTransferService, err := applicationfiles.NewService(
+		postgres.NewFileRepository(database),
+		objectStore,
+		serverConfig.UploadMaxBytes,
+	)
+	if err != nil {
+		logger.Printf("server startup failed: initialize file transfer service: %v", err)
 		os.Exit(1)
 	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
@@ -174,6 +184,8 @@ func main() {
 		workshopSettingsService,
 		workshopLogoService,
 		maximumLogoBytes,
+		fileTransferService,
+		serverConfig.UploadMaxBytes,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -191,6 +203,8 @@ func newHandler(
 	settings httpplatform.WorkshopSettingsService,
 	logo httpplatform.WorkshopLogoService,
 	maximumLogoBytes int64,
+	files httpplatform.FileTransferService,
+	maximumFileBytes int64,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -202,6 +216,7 @@ func newHandler(
 	httpplatform.RegisterSessionManagement(apiRouter, authentication, sessions)
 	httpplatform.RegisterWorkshopSettings(apiRouter, authentication, settings)
 	httpplatform.RegisterWorkshopLogo(apiRouter, authentication, logo, maximumLogoBytes)
+	httpplatform.RegisterFiles(apiRouter, authentication, files, maximumFileBytes)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux

@@ -120,6 +120,13 @@ Users with `settings.manage` can upload a validated PNG/JPEG logo with
 address arbitrary files. Logo uploads are capped at 5 MiB or the lower
 configured upload limit.
 
+Generic immutable files use `POST /api/v1/files` (`files.upload`) and
+`GET /api/v1/files/{file_id}` (`files.read`). Uploads are bounded by
+`TALOS_UPLOAD_MAX_BYTES`, hashed with SHA-256, and deduplicated without changing
+the first canonical metadata record. Downloads are authorization-checked and
+streamed as safe attachments; filesystem paths are never derived from original
+filenames.
+
 The Windows desktop starts with an editable server connection screen. It
 persists only a credential-free HTTP(S) base URL in the current user's config
 directory and tests the public `/api/v1/meta` contract through the native Go

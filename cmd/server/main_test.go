@@ -14,6 +14,7 @@ import (
 	"time"
 
 	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
+	applicationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/files"
 	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	domainauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
 	domainfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/files"
@@ -38,6 +39,7 @@ var testAuthenticationService = authenticationServiceStub{}
 var testSessionManagementService = sessionManagementServiceStub{}
 var testWorkshopSettingsService = workshopSettingsServiceStub{}
 var testWorkshopLogoService = workshopLogoServiceStub{}
+var testFileTransferService = fileTransferServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -56,6 +58,7 @@ type sessionManagementServiceStub struct{}
 type workshopSettingsServiceStub struct{}
 
 type workshopLogoServiceStub struct{}
+type fileTransferServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -294,6 +297,26 @@ func TestHandlerRegistersWorkshopLogo(t *testing.T) {
 	}
 }
 
+func (fileTransferServiceStub) UploadFile(context.Context, applicationfiles.Upload) (applicationfiles.UploadResult, error) {
+	return applicationfiles.UploadResult{}, nil
+}
+
+func (fileTransferServiceStub) OpenFile(context.Context, string) (applicationfiles.Download, error) {
+	return applicationfiles.Download{}, domainfiles.ErrFileNotFound
+}
+
+func TestHandlerRegistersFiles(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
+	request.Header.Set("Authorization", "Bearer test-token")
+	response := httptest.NewRecorder()
+
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusNotFound, response.Body.String())
+	}
+}
+
 func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.Handler {
 	t.Helper()
 	limiter, err := httpplatform.NewLoginRateLimiter(100, time.Minute)
@@ -311,5 +334,7 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		testWorkshopSettingsService,
 		testWorkshopLogoService,
 		applicationsettings.DefaultMaximumLogoBytes,
+		testFileTransferService,
+		1024,
 	)
 }

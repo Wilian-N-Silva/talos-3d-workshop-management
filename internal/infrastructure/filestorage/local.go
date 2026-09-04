@@ -125,6 +125,7 @@ func (storage *LocalFilesystemStorage) Put(
 	}
 
 	if err := os.Link(stagedPath, targetPath); err == nil {
+		storedObject.Created = true
 		return storedObject, nil
 	} else if !errors.Is(err, fs.ErrExist) {
 		return applicationstorage.StoredObject{}, fmt.Errorf("publish stored object: %w", err)
