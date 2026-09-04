@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
+	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -68,16 +68,16 @@ func (service *Service) List(ctx context.Context, printerID string) ([]domain.Ev
 func normalize(values domain.Values) (domain.Values, error) {
 	values.Description = strings.TrimSpace(values.Description)
 	values.Notes = strings.TrimSpace(values.Notes)
-	if values.PerformedAt.IsZero() || len(values.Description) == 0 || len(values.Description) > 10000 || len(values.Notes) > 10000 || values.DowntimeMinutes < 0 || (values.CostCents != nil && *values.CostCents < 0) || !validType(values.Type) {
+	if values.PerformedAt.IsZero() || len(values.Description) == 0 || len(values.Description) > 10000 || len(values.Notes) > 10000 || values.DowntimeMinutes < 0 || values.DowntimeMinutes > math.MaxInt32 || (values.CostCents != nil && *values.CostCents < 0) || !validType(values.Type) {
 		return domain.Values{}, ErrInvalidEvent
 	}
 	values.PerformedAt = values.PerformedAt.UTC()
 	if values.PrinterHours != nil {
-		value := normalizeDecimal(*values.PrinterHours)
-		number, ok := new(big.Rat).SetString(value)
-		if !maintenanceDecimalPattern.MatchString(value) || !ok || number.Sign() < 0 {
+		value := strings.TrimSpace(*values.PrinterHours)
+		if !maintenanceDecimalPattern.MatchString(value) {
 			return domain.Values{}, ErrInvalidEvent
 		}
+		value = normalizeDecimal(value)
 		values.PrinterHours = &value
 	}
 	return values, nil

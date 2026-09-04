@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: c7abe0c
-last_reconciled_at_utc: 2026-09-04T03:36:46Z
+last_reconciled_commit: f1583de
+last_reconciled_at_utc: 2026-09-04T23:49:48Z
 reconciled_by: Codex
 ```
 
@@ -136,6 +136,23 @@ in_review
 
 After a package is merged and a later reconciliation confirms it on `main`, clear this section or replace it with the next package.
 
+Reconciliation at `f1583de` found a clean working tree and a local dependency
+chain through maintenance (migrations `00009`–`00019`). Remote `main` remains at
+`c7abe0c`; none of these local packages has an open PR. Job lifecycle/material,
+energy, labor, and maintenance service/HTTP tests pass. Maintenance schema,
+repository, routes, and integration-test coverage support MAINT-001; this
+continuation finishes that existing package with stricter input validation and
+final checks before publication. The maintenance-only review base is
+`work/wp-labor-01-internal-time`; the earlier packages remain unmerged.
+
+Final validation on 2026-09-04: `go test ./...` passed with
+`TALOS_TEST_DATABASE_URL` pointing to a fresh disposable PostgreSQL 18 database,
+including migration lifecycle and maintenance history/foreign-key tests.
+`go vet ./...`, `go build -o bin/server.exe ./cmd/server`, and `git diff --check`
+passed. Added regressions cover malformed/over-precision hours, database integer
+bounds, optional costs/hours, all event types, UTC audit values, and HTTP 400.
+No desktop code or concurrency behavior changed in this package.
+
 ---
 
 ## Recently completed Work Packages
@@ -172,6 +189,7 @@ Keep this section lightweight. Older detail remains available through Git histor
 |---|---|---|---|
 | FUP-CFG-001 | reconciliation at 55e19a9 | Direct `go run` listener ignores `TALOS_SERVER_BIND_ADDRESS`/`TALOS_TRUSTED_LAN` and binds all interfaces; align listener policy with trusted-LAN security docs. | Future configuration/security Work Package; not expanded into authentication packages. |
 | FUP-DESK-001 | WP-DESK-02 at 1c9e285 | Desktop login does not yet persist/reuse the server-issued client device ID after local logout, so a later login registers another audit device. | Address with device/session management UI; no session-security weakening in this package. |
+| FUP-FIN-001 | reconciliation at f1583de | PRD section 38 requires `ADR-FIN-001`, but no rounding ADR exists. | Resolve/document the rounding decision when selecting COST-001; no financial policy introduced by maintenance work. |
 
 Use this only for concrete follow-up work discovered during implementation/reconciliation. Do not turn it into a second product backlog.
 

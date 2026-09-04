@@ -76,4 +76,24 @@ func TestPrinterRepositoryAgainstPostgreSQL(t *testing.T) {
 	if err != nil || len(events) != 1 || events[0].Type != domainmaintenance.TypePreventive {
 		t.Fatalf("List maintenance=%#v,%v", events, err)
 	}
+	// Recording another event must retain the previous values and keep absent
+	// observations distinct from zero. History follows performance time.
+	later, err := maintenanceRepository.Create(ctx, maintainedPrinter.ID, userID, domainmaintenance.Values{Type: domainmaintenance.TypeInspection, PerformedAt: now.Add(time.Hour), Description: "Inspect axes"}, now.Add(2*time.Hour))
+	if err != nil || later.PrinterHours != nil || later.CostCents != nil {
+		t.Fatalf("Create optional maintenance=%#v,%v", later, err)
+	}
+	events, err = maintenanceRepository.List(ctx, maintainedPrinter.ID)
+	if err != nil || len(events) != 2 || events[0].ID != later.ID || events[1].ID != event.ID || events[1].CostCents == nil || *events[1].CostCents != cost {
+		t.Fatalf("ordered immutable history=%#v,%v", events, err)
+	}
+	if err := repository.Delete(ctx, maintainedPrinter.ID); err == nil {
+		t.Fatal("deleting a printer with maintenance history succeeded")
+	}
+	const missingID = "11111111-1111-4111-8111-111111111111"
+	if _, err := maintenanceRepository.List(ctx, missingID); !errors.Is(err, domain.ErrPrinterNotFound) {
+		t.Fatalf("missing printer history error=%v", err)
+	}
+	if _, err := maintenanceRepository.Create(ctx, maintainedPrinter.ID, missingID, domainmaintenance.Values{Type: domainmaintenance.TypeInspection, PerformedAt: now, Description: "Invalid actor"}, now); !errors.Is(err, domainmaintenance.ErrMaintenanceReference) {
+		t.Fatalf("missing actor error=%v", err)
+	}
 }
