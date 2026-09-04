@@ -93,6 +93,8 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | JOB-005 | verified_complete | explicit awaiting-review service/route + approved/partial/failed quantity validation | fb4b840 | Printer completion remains distinct from quality; review records good/scrap output and determines the terminal Job state. |
 | JOB-006 | verified_complete | append-only `job_events` + atomic create/transition/review writes and history API | fb4b840 | Significant events retain actor user/source device and bounded metadata; no high-frequency telemetry is recorded. |
 | ENERGY-001 | verified_complete | migration `00017_energy_measurements` + exact source-aware service/repository + secured Job API | a94f2aa | Meter deltas are derived exactly; direct and estimated evidence remain explicit with UTC recorder audit and immutable tariff snapshots. |
+| LABOR-001 | verified_complete | migration `00018_labor` + validated internal rate service/repository + `costing.read`/`costing.manage` routes | 6db1a00 | Named active rates retain activity and integer internal hourly cost only; no billable/customer price fields exist. |
+| LABOR-002 | verified_complete | immutable Job labor entry repository/API + PostgreSQL snapshot test + minute summary tests | 6db1a00 | Non-commercial Jobs accept positive time entries; activity and hourly rate are snapshotted, with total minutes grouped by activity. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -114,10 +116,10 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-ENERGY-01
-title: Job Energy Measurements
-tasks: [ENERGY-001]
-branch: work/wp-energy-01-measurements
+id: WP-LABOR-01
+title: Internal Labor Time
+tasks: [LABOR-001, LABOR-002]
+branch: work/wp-labor-01-internal-time
 state: ready_for_pr
 pull_request: null
 ```
@@ -139,6 +141,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-LABOR-01 | LABOR-001, LABOR-002 | 6db1a00 (local, unpushed) | Internal-only labor rate configuration and immutable non-commercial-capable Job time entries with minute totals. |
 | WP-ENERGY-01 | ENERGY-001 | a94f2aa (local, unpushed) | Exact Job energy evidence with meter/direct/estimated sources, recorder audit, tariff snapshots, and secured API. |
 | WP-JOB-02 | JOB-003, JOB-004 | cd09805 (local, unpushed) | Exact per-Job spool usage, immutable cost snapshot fields, source-aware totals, secured CRUD API, and desktop workflow. |
 | WP-JOB-01 | JOB-001, JOB-002, JOB-005, JOB-006 | fb4b840 (local, unpushed) | Non-commercial-capable manual Job lifecycle, explicit quality review, and atomic append-only audit events. |
