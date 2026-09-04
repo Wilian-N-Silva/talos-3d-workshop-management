@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	domainmaintenance "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/maintenance"
 	domain "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/printers"
 )
 
@@ -21,13 +22,13 @@ func TestPrinterRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open()=%v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, printers")
+		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE maintenance_events, job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, printers")
 		_ = database.Close()
 	})
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate()=%v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, printers"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE maintenance_events, job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, printers"); err != nil {
 		t.Fatalf("truncate=%v", err)
 	}
 	now := time.Date(2026, 9, 4, 20, 0, 0, 0, time.UTC)
@@ -55,5 +56,24 @@ func TestPrinterRepositoryAgainstPostgreSQL(t *testing.T) {
 	}
 	if _, err := repository.FindByID(ctx, created.ID); !errors.Is(err, domain.ErrPrinterNotFound) {
 		t.Fatalf("FindByID(deleted)=%v", err)
+	}
+	values.Name = "A1 Maintenance"
+	maintainedPrinter, err := repository.Create(ctx, values, now)
+	if err != nil {
+		t.Fatalf("create maintained printer=%v", err)
+	}
+	var userID string
+	if err := database.QueryRowContext(ctx, "INSERT INTO users(name,email_or_username,password_hash,status,role) VALUES('Maintenance Owner',$1,'$argon2id$test','active','owner') RETURNING id", "maintenance-owner-"+maintainedPrinter.ID).Scan(&userID); err != nil {
+		t.Fatalf("create maintenance user=%v", err)
+	}
+	hours, cost := "1250.5", int64(4500)
+	maintenanceRepository := NewMaintenanceRepository(database)
+	event, err := maintenanceRepository.Create(ctx, maintainedPrinter.ID, userID, domainmaintenance.Values{Type: domainmaintenance.TypePreventive, PerformedAt: now, PrinterHours: &hours, Description: "Lubricate axes", CostCents: &cost, DowntimeMinutes: 30}, now)
+	if err != nil || event.PrinterHours == nil || *event.PrinterHours != hours || event.CostCents == nil || *event.CostCents != cost || event.CreatedBy != userID {
+		t.Fatalf("Create maintenance=%#v,%v", event, err)
+	}
+	events, err := maintenanceRepository.List(ctx, maintainedPrinter.ID)
+	if err != nil || len(events) != 1 || events[0].Type != domainmaintenance.TypePreventive {
+		t.Fatalf("List maintenance=%#v,%v", events, err)
 	}
 }

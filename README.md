@@ -178,6 +178,11 @@ billable/customer price fields and mutations require `costing.manage`.
 Immutable Job time entries use `/api/v1/jobs/{jobID}/labor`, snapshot the
 selected active rate and activity, support non-commercial Jobs, and expose
 total minutes without prematurely performing the later labor-cost calculation.
+Printer maintenance history uses
+`/api/v1/printers/{printerID}/maintenance`. It records typed events with
+optional exact printer hours and optional integer-cent cost while retaining
+performed time, downtime, description, notes, and creator. This remains
+logical server-side history only and creates no server-to-printer control path.
 
 The Windows desktop starts with an editable server connection screen. It
 persists only a credential-free HTTP(S) base URL in the current user's config

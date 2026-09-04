@@ -19,6 +19,7 @@ import (
 	applicationinventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/inventory"
 	applicationjobs "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/jobs"
 	applicationlabor "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/labor"
+	applicationmaintenance "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/maintenance"
 	applicationprinters "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/printers"
 	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
@@ -159,6 +160,11 @@ func main() {
 		logger.Printf("server startup failed: initialize labor service: %v", err)
 		os.Exit(1)
 	}
+	maintenanceService, err := applicationmaintenance.NewService(postgres.NewMaintenanceRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize maintenance service: %v", err)
+		os.Exit(1)
+	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
 	if serverConfig.UploadMaxBytes < maximumLogoBytes {
 		maximumLogoBytes = serverConfig.UploadMaxBytes
@@ -253,6 +259,7 @@ func main() {
 		jobMaterialUsageService,
 		energyService,
 		laborService,
+		maintenanceService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -282,6 +289,7 @@ func newHandler(
 	jobMaterialUsage httpplatform.JobMaterialUsageService,
 	energy httpplatform.EnergyService,
 	labor httpplatform.LaborService,
+	maintenance httpplatform.MaintenanceService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -304,6 +312,7 @@ func newHandler(
 	httpplatform.RegisterJobMaterialUsage(apiRouter, authentication, jobMaterialUsage)
 	httpplatform.RegisterEnergy(apiRouter, authentication, energy)
 	httpplatform.RegisterLabor(apiRouter, authentication, labor)
+	httpplatform.RegisterMaintenance(apiRouter, authentication, maintenance)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux
