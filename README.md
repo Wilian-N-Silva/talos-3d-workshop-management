@@ -153,6 +153,11 @@ Catalog supply BOM entries use `/api/v1/catalog/items/{itemID}/bom`, with
 CRUD. Preview quantities and cents are exact decimal strings and are not
 rounded or persisted as an official price.
 
+Logical, non-sensitive printer records use `/api/v1/printers`. Reads require
+`jobs.read`; configuration mutations require `settings.manage`. The server
+stores model, nozzle, location, and costing inputs, but never accepts printer
+access codes or provides a server-to-printer command path.
+
 The Windows desktop starts with an editable server connection screen. It
 persists only a credential-free HTTP(S) base URL in the current user's config
 directory and tests the public `/api/v1/meta` contract through the native Go

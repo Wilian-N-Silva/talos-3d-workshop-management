@@ -21,6 +21,7 @@ import (
 	domaincatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/catalog"
 	domainfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/files"
 	domaininventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/inventory"
+	domainprinters "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/printers"
 	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
 )
@@ -48,6 +49,7 @@ var testCatalogDesignService = catalogDesignServiceStub{}
 var testFilamentInventoryService = filamentInventoryServiceStub{}
 var testSupplyInventoryService = supplyInventoryServiceStub{}
 var testCatalogBOMService = catalogBOMServiceStub{}
+var testPrinterService = printerServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -72,6 +74,7 @@ type catalogDesignServiceStub struct{}
 type filamentInventoryServiceStub struct{}
 type supplyInventoryServiceStub struct{}
 type catalogBOMServiceStub struct{}
+type printerServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -432,6 +435,19 @@ func (catalogBOMServiceStub) Update(context.Context, string, string, domaincatal
 	return domaincatalog.BOMItem{}, nil
 }
 func (catalogBOMServiceStub) Delete(context.Context, string, string) error { return nil }
+func (printerServiceStub) Create(context.Context, domainprinters.Values) (domainprinters.Printer, error) {
+	return domainprinters.Printer{}, nil
+}
+func (printerServiceStub) Get(context.Context, string) (domainprinters.Printer, error) {
+	return domainprinters.Printer{}, nil
+}
+func (printerServiceStub) List(context.Context) ([]domainprinters.Printer, error) {
+	return []domainprinters.Printer{}, nil
+}
+func (printerServiceStub) Update(context.Context, string, domainprinters.Values) (domainprinters.Printer, error) {
+	return domainprinters.Printer{}, nil
+}
+func (printerServiceStub) Delete(context.Context, string) error { return nil }
 
 func TestHandlerRegistersFiles(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
@@ -487,6 +503,16 @@ func TestHandlerRegistersCatalogBOM(t *testing.T) {
 	}
 }
 
+func TestHandlerRegistersPrinters(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.PrintersPath, nil)
+	request.Header.Set("Authorization", "Bearer test-token")
+	response := httptest.NewRecorder()
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+}
+
 func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.Handler {
 	t.Helper()
 	limiter, err := httpplatform.NewLoginRateLimiter(100, time.Minute)
@@ -511,5 +537,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		testFilamentInventoryService,
 		testSupplyInventoryService,
 		testCatalogBOMService,
+		testPrinterService,
 	)
 }

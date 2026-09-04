@@ -16,6 +16,7 @@ import (
 	applicationcatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/catalog"
 	applicationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/files"
 	applicationinventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/inventory"
+	applicationprinters "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/printers"
 	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/config"
@@ -129,6 +130,11 @@ func main() {
 		logger.Printf("server startup failed: initialize catalog BOM service: %v", err)
 		os.Exit(1)
 	}
+	printerService, err := applicationprinters.NewService(postgres.NewPrinterRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize printer service: %v", err)
+		os.Exit(1)
+	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
 	if serverConfig.UploadMaxBytes < maximumLogoBytes {
 		maximumLogoBytes = serverConfig.UploadMaxBytes
@@ -218,6 +224,7 @@ func main() {
 		filamentInventoryService,
 		supplyInventoryService,
 		catalogBOMService,
+		printerService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -242,6 +249,7 @@ func newHandler(
 	filamentInventory httpplatform.FilamentInventoryService,
 	supplyInventory httpplatform.SupplyInventoryService,
 	catalogBOM httpplatform.CatalogBOMService,
+	printers httpplatform.PrinterService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -259,6 +267,7 @@ func newHandler(
 	httpplatform.RegisterFilamentInventory(apiRouter, authentication, filamentInventory)
 	httpplatform.RegisterSupplyInventory(apiRouter, authentication, supplyInventory)
 	httpplatform.RegisterCatalogBOM(apiRouter, authentication, catalogBOM)
+	httpplatform.RegisterPrinters(apiRouter, authentication, printers)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux
