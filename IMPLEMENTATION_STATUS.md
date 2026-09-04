@@ -89,8 +89,8 @@ id: WP-DESK-02
 title: Desktop Login and Secure Session
 tasks: [DESK-003, DESK-004]
 branch: work/wp-desk-02-login-session
-state: ready_for_pr
-pull_request: null
+state: in_review
+pull_request: 28
 ```
 
 Recommended `state` values:
