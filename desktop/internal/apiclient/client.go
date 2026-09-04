@@ -2,6 +2,7 @@
 package apiclient
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -65,6 +66,39 @@ type ConnectionResult struct {
 	Meta
 	Compatible         bool   `json:"compatible"`
 	CompatibilityIssue string `json:"compatibility_issue"`
+}
+
+// LoginInput contains credentials and local installation audit metadata.
+type LoginInput struct {
+	EmailOrUsername string      `json:"email_or_username"`
+	Password        string      `json:"password"`
+	Device          LoginDevice `json:"device"`
+}
+
+// LoginDevice identifies the Windows installation to the server.
+type LoginDevice struct {
+	ID          string `json:"id,omitempty"`
+	DisplayName string `json:"display_name"`
+	OS          string `json:"os"`
+	AppVersion  string `json:"app_version"`
+}
+
+// LoginResult is the typed server response. Token remains native-only.
+type LoginResult struct {
+	Token     string      `json:"token"`
+	ExpiresAt time.Time   `json:"expires_at"`
+	User      LoginUser   `json:"user"`
+	Device    LoginDevice `json:"device"`
+}
+
+// LoginUser is safe identity metadata returned after authentication.
+type LoginUser struct {
+	ID              string   `json:"id"`
+	Name            string   `json:"name"`
+	EmailOrUsername string   `json:"email_or_username"`
+	Status          string   `json:"status"`
+	Role            string   `json:"role"`
+	Permissions     []string `json:"permissions"`
 }
 
 type httpDoer interface {
@@ -154,6 +188,59 @@ func (client *Client) CheckConnection(ctx context.Context) (ConnectionResult, er
 	} else if compareSemanticVersions(client.desktopVersion, minimumVersion) < 0 {
 		result.Compatible = false
 		result.CompatibilityIssue = "desktop_update_required"
+	}
+	return result, nil
+}
+
+// Login authenticates through the native client. The caller must immediately
+// move the returned token into secure storage and never expose it to React.
+func (client *Client) Login(ctx context.Context, input LoginInput) (LoginResult, error) {
+	body, err := json.Marshal(input)
+	if err != nil {
+		return LoginResult{}, invalidResponseError("Unable to encode login request", err)
+	}
+	defer clear(body)
+	requestContext, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+	request, err := http.NewRequestWithContext(
+		requestContext,
+		http.MethodPost,
+		client.baseURL+"/api/v1/auth/login",
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return LoginResult{}, invalidResponseError("Unable to create login request", err)
+	}
+	request.Header.Set("Accept", "application/json")
+	request.Header.Set("Content-Type", "application/json")
+
+	response, err := client.httpClient.Do(request)
+	if err != nil {
+		if errors.Is(requestContext.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {
+			return LoginResult{}, &ClientError{Kind: ErrorTimeout, Message: "Login timed out", cause: err}
+		}
+		return LoginResult{}, &ClientError{Kind: ErrorNetwork, Message: "Unable to connect to server", cause: err}
+	}
+	defer response.Body.Close()
+	responseBody, err := io.ReadAll(io.LimitReader(response.Body, maximumResponseSize+1))
+	if err != nil {
+		return LoginResult{}, invalidResponseError("Unable to read login response", err)
+	}
+	defer clear(responseBody)
+	if len(responseBody) > maximumResponseSize {
+		return LoginResult{}, invalidResponseError("Server response is too large", nil)
+	}
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return LoginResult{}, mapAPIError(response.StatusCode, responseBody)
+	}
+	var result LoginResult
+	if err := json.Unmarshal(responseBody, &result); err != nil {
+		return LoginResult{}, invalidResponseError("Server returned an invalid login response", err)
+	}
+	if strings.TrimSpace(result.Token) == "" || result.ExpiresAt.IsZero() ||
+		strings.TrimSpace(result.User.ID) == "" || strings.TrimSpace(result.User.Name) == "" ||
+		strings.TrimSpace(result.User.EmailOrUsername) == "" || strings.TrimSpace(result.Device.ID) == "" {
+		return LoginResult{}, invalidResponseError("Server login response is incomplete", nil)
 	}
 	return result, nil
 }

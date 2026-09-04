@@ -23,7 +23,7 @@ React
 React contains no HTTP client for the workshop server. The native client owns
 the base URL, an eight-second request timeout, bounded response reads, and the
 common mapping for network, timeout, API-envelope, and invalid-response
-failures. This foundation exposes only `GET /api/v1/meta`; authenticated and
+failures. The client exposes public metadata and login operations; authenticated
 business endpoints remain later task scope.
 
 Compatibility requires API version `v1` and a desktop semantic version at
@@ -31,3 +31,8 @@ least as new as `minimum_desktop_version`. The desktop build version defaults
 to `0.0.0` for development and can be replaced through Go linker flags for a
 release build. An incompatible server is identified without persisting or
 exposing a session token.
+
+Login credentials follow the same native path through
+`POST /api/v1/auth/login`. The password exists only for that local operation,
+and the resulting token is handed directly to Windows secure credential storage
+without crossing the Wails response boundary.

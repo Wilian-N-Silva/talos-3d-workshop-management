@@ -8,8 +8,10 @@ exist.
 
 `SessionService` generates 32 cryptographically random bytes and encodes them
 as an unpadded base64url bearer token. This provides 256 bits of entropy. The
-plaintext token is returned only after its session record is created and must
-be placed in Windows secure credential storage by the desktop client.
+plaintext token is returned only after its session record is created. The
+desktop native layer places it in a server-specific Windows Credential Manager
+generic credential; it is never returned to React or written to plaintext
+configuration.
 
 The server derives a SHA-256 digest from the encoded token. PostgreSQL stores
 only that fixed 32-byte digest and enforces uniqueness; the plaintext token is

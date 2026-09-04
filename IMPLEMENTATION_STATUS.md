@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: 415c986
-last_reconciled_at_utc: 2026-09-02T18:11:58Z
+last_reconciled_commit: 01dc256
+last_reconciled_at_utc: 2026-09-04T02:16:59Z
 reconciled_by: Codex
 ```
 
@@ -83,12 +83,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-DESK-01
-title: Desktop Server Connection Foundation
-tasks: [DESK-001, DESK-002]
-branch: work/wp-desk-01-server-connection
-state: in_review
-pull_request: 27
+id: WP-DESK-02
+title: Desktop Login and Secure Session
+tasks: [DESK-003, DESK-004]
+branch: work/wp-desk-02-login-session
+state: in_progress
+pull_request: null
 ```
 
 Recommended `state` values:
@@ -108,6 +108,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-DESK-01 | DESK-001, DESK-002 | 01dc256 (PR #27) | Native server connection configuration and version-compatible API client. |
 | WP-SET-02 | FILE-001, SET-003 | 415c986 (PR #26) | Immutable file metadata and authorized current workshop logo. |
 | WP-SET-01 | SET-001, SET-002 | 8eeb208 (PR #25) | Persisted workshop settings and permission-aware API. |
 | WP-AUTH-02 | AUTH-008 | f1a7fd7 (PR #24) | Session/device listing and permission-aware revocation. |
