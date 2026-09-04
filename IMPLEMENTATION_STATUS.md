@@ -72,6 +72,12 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | CAT-001 | verified_complete | migration `00009_catalog_items` + catalog domain/service + PostgreSQL repository integration test | a071f31 | Purpose/status checks, optional SKU, sellable flag, UTC timestamps, and normalized JSONB tags are persisted. |
 | CAT-002 | verified_complete | permission-protected catalog CRUD routes + validation/pagination/filter tests | a071f31 | Reads require `catalog.read`; mutations require `catalog.write`; bounded list filters use parameterized SQL. |
 | CAT-003 | verified_complete | native catalog API client/Wails methods + permission-aware React list/detail/editor + production Wails build | fad96b7 | Purpose/status are visible; create/edit affordances require `catalog.write`; bearer credentials remain native-only. |
+| CAT-004 | verified_complete | migration `00010_catalog_designs` + part service/repository/routes + cascade/restriction tests | 3372fc5 | Part quantity and CRUD are validated; empty structures cascade, while immutable design history prevents deletion. |
+| CAT-005 | verified_complete | unique immutable `design_versions` schema + create-only domain/repository tests | 3372fc5 | `(catalog_part_id, version)` is unique; creator, notes, and UTC creation time are retained with no overwrite route. |
+| CAT-006 | verified_complete | permission-protected version create/history routes + native client/UI workflow | 3372fc5 | Reads require `catalog.read`; new versions require `catalog.write`; history is newest-first and bounded to 100 records. |
+| CAT-007 | verified_complete | role-constrained `design_version_files` links + reusable-file/print-discovery tests | 3372fc5 | Immutable files can be reused across versions; source/mesh/print/preview/documentation/other roles are returned with digest metadata. |
+| CAT-008 | verified_complete | immutable provenance/license columns + validation/API/desktop form tests | 3372fc5 | Origin, URL, author, license, tri-state commercial permission, and attribution are recorded per version. |
+| CAT-009 | verified_complete | sellable-item license evaluation and distinct advisory UI states | 3372fc5 | Unknown and denied commercial permissions are distinct warnings; neither blocks internal/prototype use. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -97,7 +103,7 @@ id: WP-CAT-02
 title: Catalog Design History
 tasks: [CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009]
 branch: work/wp-cat-02-design-versions
-state: in_progress
+state: ready_for_pr
 pull_request: null
 ```
 
