@@ -158,6 +158,11 @@ Logical, non-sensitive printer records use `/api/v1/printers`. Reads require
 stores model, nozzle, location, and costing inputs, but never accepts printer
 access codes or provides a server-to-printer command path.
 
+Manual print Jobs use `/api/v1/jobs`. They may be created for internal,
+prototype, test, maintenance, personal, or production use without commercial
+context. State transitions and explicit quality review remain separate, while
+significant events atomically retain the acting user and source desktop device.
+
 The Windows desktop starts with an editable server connection screen. It
 persists only a credential-free HTTP(S) base URL in the current user's config
 directory and tests the public `/api/v1/meta` contract through the native Go

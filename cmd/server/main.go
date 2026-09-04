@@ -16,6 +16,7 @@ import (
 	applicationcatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/catalog"
 	applicationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/files"
 	applicationinventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/inventory"
+	applicationjobs "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/jobs"
 	applicationprinters "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/printers"
 	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
@@ -135,6 +136,11 @@ func main() {
 		logger.Printf("server startup failed: initialize printer service: %v", err)
 		os.Exit(1)
 	}
+	jobService, err := applicationjobs.NewService(postgres.NewJobRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize print job service: %v", err)
+		os.Exit(1)
+	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
 	if serverConfig.UploadMaxBytes < maximumLogoBytes {
 		maximumLogoBytes = serverConfig.UploadMaxBytes
@@ -225,6 +231,7 @@ func main() {
 		supplyInventoryService,
 		catalogBOMService,
 		printerService,
+		jobService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -250,6 +257,7 @@ func newHandler(
 	supplyInventory httpplatform.SupplyInventoryService,
 	catalogBOM httpplatform.CatalogBOMService,
 	printers httpplatform.PrinterService,
+	jobs httpplatform.JobService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -268,6 +276,7 @@ func newHandler(
 	httpplatform.RegisterSupplyInventory(apiRouter, authentication, supplyInventory)
 	httpplatform.RegisterCatalogBOM(apiRouter, authentication, catalogBOM)
 	httpplatform.RegisterPrinters(apiRouter, authentication, printers)
+	httpplatform.RegisterJobs(apiRouter, authentication, jobs)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux

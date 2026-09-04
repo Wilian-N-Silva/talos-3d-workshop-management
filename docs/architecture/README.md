@@ -14,6 +14,7 @@ Current documents:
 - [Catalog parts and designs](catalog-designs.md)
 - [Catalog supply bill of materials](catalog-bom.md)
 - [Logical printer registry](printers.md)
+- [Manual print Job lifecycle](print-jobs.md)
 - [Desktop login](login.md)
 - [Desktop authentication boundary](desktop-authentication.md)
 - [Desktop permission-aware branded shell](desktop-shell.md)
