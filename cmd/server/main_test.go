@@ -46,6 +46,7 @@ var testFileTransferService = fileTransferServiceStub{}
 var testCatalogItemService = catalogItemServiceStub{}
 var testCatalogDesignService = catalogDesignServiceStub{}
 var testFilamentInventoryService = filamentInventoryServiceStub{}
+var testSupplyInventoryService = supplyInventoryServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -68,6 +69,7 @@ type fileTransferServiceStub struct{}
 type catalogItemServiceStub struct{}
 type catalogDesignServiceStub struct{}
 type filamentInventoryServiceStub struct{}
+type supplyInventoryServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -393,6 +395,29 @@ func (filamentInventoryServiceStub) ListMeasurements(context.Context, string) ([
 	return []domaininventory.SpoolMeasurement{}, nil
 }
 
+func (supplyInventoryServiceStub) CreateSupply(context.Context, domaininventory.SupplyValues) (domaininventory.Supply, error) {
+	return domaininventory.Supply{}, nil
+}
+func (supplyInventoryServiceStub) GetSupply(context.Context, string) (domaininventory.Supply, error) {
+	return domaininventory.Supply{}, nil
+}
+func (supplyInventoryServiceStub) ListSupplies(context.Context) ([]domaininventory.Supply, error) {
+	return []domaininventory.Supply{}, nil
+}
+func (supplyInventoryServiceStub) UpdateSupply(context.Context, string, domaininventory.SupplyValues) (domaininventory.Supply, error) {
+	return domaininventory.Supply{}, nil
+}
+func (supplyInventoryServiceStub) DeleteSupply(context.Context, string) error { return nil }
+func (supplyInventoryServiceStub) RecordMovement(context.Context, string, string, domaininventory.SupplyMovementValues) (domaininventory.SupplyMovement, error) {
+	return domaininventory.SupplyMovement{}, nil
+}
+func (supplyInventoryServiceStub) ListMovements(context.Context, string) ([]domaininventory.SupplyMovement, error) {
+	return []domaininventory.SupplyMovement{}, nil
+}
+func (supplyInventoryServiceStub) ListLowInventory(context.Context, string) (domaininventory.LowInventory, error) {
+	return domaininventory.LowInventory{Spools: []domaininventory.Spool{}, Supplies: []domaininventory.Supply{}}, nil
+}
+
 func TestHandlerRegistersFiles(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
 	request.Header.Set("Authorization", "Bearer test-token")
@@ -427,6 +452,16 @@ func TestHandlerRegistersFilamentInventory(t *testing.T) {
 	}
 }
 
+func TestHandlerRegistersSupplyInventory(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.SuppliesPath, nil)
+	request.Header.Set("Authorization", "Bearer test-token")
+	response := httptest.NewRecorder()
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+}
+
 func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.Handler {
 	t.Helper()
 	limiter, err := httpplatform.NewLoginRateLimiter(100, time.Minute)
@@ -449,5 +484,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		testCatalogItemService,
 		testCatalogDesignService,
 		testFilamentInventoryService,
+		testSupplyInventoryService,
 	)
 }

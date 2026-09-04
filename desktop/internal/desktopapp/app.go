@@ -38,6 +38,11 @@ type remoteClient interface {
 	ListSpools(context.Context, string) ([]apiclient.Spool, error)
 	ListSpoolMeasurements(context.Context, string, string) ([]apiclient.SpoolMeasurement, error)
 	RecordSpoolMeasurement(context.Context, string, string, apiclient.MeasurementInput) (apiclient.SpoolMeasurement, error)
+	ListSupplies(context.Context, string) ([]apiclient.Supply, error)
+	CreateSupply(context.Context, string, apiclient.SupplyInput) (apiclient.Supply, error)
+	ListSupplyMovements(context.Context, string, string) ([]apiclient.SupplyMovement, error)
+	RecordSupplyMovement(context.Context, string, string, apiclient.SupplyMovementInput) (apiclient.SupplyMovement, error)
+	ListLowInventory(context.Context, string, string) (apiclient.LowInventory, error)
 }
 
 type connectionClientFactory func(string, string) (remoteClient, error)
@@ -386,6 +391,66 @@ func (a *App) RecordSpoolMeasurement(spoolID string, input apiclient.Measurement
 	value, err := client.RecordSpoolMeasurement(a.applicationContext(), session.Token, spoolID, input)
 	if err != nil {
 		return apiclient.SpoolMeasurement{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return value, nil
+}
+
+func (a *App) ListSupplies() ([]apiclient.Supply, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return nil, err
+	}
+	values, err := client.ListSupplies(a.applicationContext(), session.Token)
+	if err != nil {
+		return nil, a.handleAuthenticatedError(baseURL, err)
+	}
+	return values, nil
+}
+
+func (a *App) CreateSupply(input apiclient.SupplyInput) (apiclient.Supply, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.Supply{}, err
+	}
+	value, err := client.CreateSupply(a.applicationContext(), session.Token, input)
+	if err != nil {
+		return apiclient.Supply{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return value, nil
+}
+
+func (a *App) ListSupplyMovements(supplyID string) ([]apiclient.SupplyMovement, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return nil, err
+	}
+	values, err := client.ListSupplyMovements(a.applicationContext(), session.Token, supplyID)
+	if err != nil {
+		return nil, a.handleAuthenticatedError(baseURL, err)
+	}
+	return values, nil
+}
+
+func (a *App) RecordSupplyMovement(supplyID string, input apiclient.SupplyMovementInput) (apiclient.SupplyMovement, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.SupplyMovement{}, err
+	}
+	value, err := client.RecordSupplyMovement(a.applicationContext(), session.Token, supplyID, input)
+	if err != nil {
+		return apiclient.SupplyMovement{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return value, nil
+}
+
+func (a *App) ListLowInventory(spoolThresholdG string) (apiclient.LowInventory, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.LowInventory{}, err
+	}
+	value, err := client.ListLowInventory(a.applicationContext(), session.Token, spoolThresholdG)
+	if err != nil {
+		return apiclient.LowInventory{}, a.handleAuthenticatedError(baseURL, err)
 	}
 	return value, nil
 }

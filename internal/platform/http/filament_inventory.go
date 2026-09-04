@@ -223,7 +223,7 @@ func decodeInventory(w http.ResponseWriter, r *http.Request, target any) bool {
 }
 func writeInventoryError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, application.ErrInvalidMaterial), errors.Is(err, application.ErrInvalidSpool), errors.Is(err, application.ErrInvalidMeasurement), errors.Is(err, domain.ErrMeasurementBelowTare):
+	case errors.Is(err, application.ErrInvalidMaterial), errors.Is(err, application.ErrInvalidSpool), errors.Is(err, application.ErrInvalidMeasurement), errors.Is(err, application.ErrInvalidSupply), errors.Is(err, application.ErrInvalidSupplyMovement), errors.Is(err, application.ErrInvalidLowThreshold), errors.Is(err, domain.ErrMeasurementBelowTare):
 		WriteError(w, http.StatusBadRequest, "invalid_inventory_data", "Invalid inventory data", nil)
 	case errors.Is(err, domain.ErrMaterialNotFound):
 		WriteError(w, http.StatusNotFound, "material_not_found", "Material not found", nil)
@@ -233,6 +233,14 @@ func writeInventoryError(w http.ResponseWriter, err error) {
 		WriteError(w, http.StatusConflict, "spool_code_exists", "Spool code already exists", nil)
 	case errors.Is(err, domain.ErrInventoryHistoryExists):
 		WriteError(w, http.StatusConflict, "inventory_history_exists", "Inventory history prevents deletion", nil)
+	case errors.Is(err, domain.ErrSupplyNotFound):
+		WriteError(w, http.StatusNotFound, "supply_not_found", "Supply not found", nil)
+	case errors.Is(err, domain.ErrSupplySKUConflict):
+		WriteError(w, http.StatusConflict, "supply_sku_exists", "Supply SKU already exists", nil)
+	case errors.Is(err, domain.ErrSupplyHistoryExists):
+		WriteError(w, http.StatusConflict, "supply_history_exists", "Supply movement history prevents deletion", nil)
+	case errors.Is(err, domain.ErrInsufficientStock):
+		WriteError(w, http.StatusConflict, "insufficient_stock", "Movement would make supply stock negative", nil)
 	default:
 		WriteError(w, http.StatusInternalServerError, "internal_error", "Internal server error", nil)
 	}

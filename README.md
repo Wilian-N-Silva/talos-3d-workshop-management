@@ -103,6 +103,12 @@ Filament inventory APIs expose material and spool CRUD under
 weighings use `/api/v1/inventory/spools/{spoolID}/measurements`; exact physical
 values are JSON decimal strings and persisted as PostgreSQL `NUMERIC`.
 
+Non-filament supplies use `/api/v1/inventory/supplies`, with append-only signed
+stock deltas at `/api/v1/inventory/supplies/{supplyID}/movements`. Negative stock
+is rejected atomically. `/api/v1/inventory/low-stock` derives low supplies and
+active low spools without persisting alert rows; `spool_threshold_g` defaults to
+100 grams.
+
 ## Authentication and access control
 
 First-owner setup is available through `GET /api/setup/status` and
