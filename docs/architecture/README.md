@@ -16,6 +16,7 @@ Current documents:
 - [Logical printer registry](printers.md)
 - [Manual print Job lifecycle](print-jobs.md)
 - [Job energy measurements](energy-measurements.md)
+- [Internal labor rates and Job time](labor.md)
 - [Desktop login](login.md)
 - [Desktop authentication boundary](desktop-authentication.md)
 - [Desktop permission-aware branded shell](desktop-shell.md)

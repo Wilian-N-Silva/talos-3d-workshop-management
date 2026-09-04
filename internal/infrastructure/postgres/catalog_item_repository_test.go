@@ -40,13 +40,13 @@ func TestCatalogItemRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open() error = %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, design_version_files, design_versions, catalog_parts, catalog_items")
+		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, design_version_files, design_versions, catalog_parts, catalog_items")
 		_ = database.Close()
 	})
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, design_version_files, design_versions, catalog_parts, catalog_items"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, design_version_files, design_versions, catalog_parts, catalog_items"); err != nil {
 		t.Fatalf("truncate catalog_items: %v", err)
 	}
 

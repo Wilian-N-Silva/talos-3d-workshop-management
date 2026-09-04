@@ -23,6 +23,7 @@ import (
 	domainfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/files"
 	domaininventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/inventory"
 	domainjobs "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/jobs"
+	domainlabor "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/labor"
 	domainprinters "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/printers"
 	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
@@ -55,6 +56,7 @@ var testPrinterService = printerServiceStub{}
 var testJobService = jobServiceStub{}
 var testJobMaterialUsageService = jobMaterialUsageServiceStub{}
 var testEnergyService = energyServiceStub{}
+var testLaborService = laborServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -83,6 +85,7 @@ type printerServiceStub struct{}
 type jobServiceStub struct{}
 type jobMaterialUsageServiceStub struct{}
 type energyServiceStub struct{}
+type laborServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -493,6 +496,21 @@ func (energyServiceStub) Create(context.Context, string, string, domainenergy.Va
 func (energyServiceStub) List(context.Context, string) ([]domainenergy.Measurement, error) {
 	return []domainenergy.Measurement{}, nil
 }
+func (laborServiceStub) CreateRate(context.Context, domainlabor.RateValues) (domainlabor.Rate, error) {
+	return domainlabor.Rate{}, nil
+}
+func (laborServiceStub) ListRates(context.Context) ([]domainlabor.Rate, error) {
+	return []domainlabor.Rate{}, nil
+}
+func (laborServiceStub) UpdateRate(context.Context, string, domainlabor.RateValues) (domainlabor.Rate, error) {
+	return domainlabor.Rate{}, nil
+}
+func (laborServiceStub) CreateEntry(context.Context, string, string, domainlabor.EntryValues) (domainlabor.Entry, error) {
+	return domainlabor.Entry{}, nil
+}
+func (laborServiceStub) ListEntries(context.Context, string) (domainlabor.Summary, error) {
+	return domainlabor.Summary{Items: []domainlabor.Entry{}, MinutesByActivity: map[domainlabor.ActivityType]int64{}}, nil
+}
 
 func TestHandlerRegistersFiles(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
@@ -616,5 +634,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		testJobService,
 		testJobMaterialUsageService,
 		testEnergyService,
+		testLaborService,
 	)
 }
