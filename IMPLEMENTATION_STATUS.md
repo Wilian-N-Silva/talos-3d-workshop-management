@@ -94,8 +94,8 @@ id: WP-FILE-01
 title: Authorized Immutable File Transfer
 tasks: [FILE-002, FILE-003]
 branch: work/wp-file-01-authorized-transfer
-state: ready_for_pr
-pull_request: null
+state: in_review
+pull_request: 30
 ```
 
 Recommended `state` values:
