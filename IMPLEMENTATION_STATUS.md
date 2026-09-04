@@ -69,6 +69,8 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | FILE-001 | verified_complete | migration `00008_files` + immutable file domain metadata + PostgreSQL repository tests | 27b64cb | UUID, unique SHA-256, safe storage key, original name, content type, size, uploader, and UTC creation time are persisted. |
 | FILE-002 | verified_complete | bounded multipart route + immutable upload service/repository + SHA-256 dedup/cleanup tests | e3e9947 | `files.upload` is enforced; only newly published unreferenced objects are removed during compensation. |
 | FILE-003 | verified_complete | permission-protected file-by-ID route + repository/storage streaming + 404/403/header tests | e3e9947 | `files.read` is enforced; downloads use safe attachment disposition and server-controlled object keys. |
+| CAT-001 | verified_complete | migration `00009_catalog_items` + catalog domain/service + PostgreSQL repository integration test | a071f31 | Purpose/status checks, optional SKU, sellable flag, UTC timestamps, and normalized JSONB tags are persisted. |
+| CAT-002 | verified_complete | permission-protected catalog CRUD routes + validation/pagination/filter tests | a071f31 | Reads require `catalog.read`; mutations require `catalog.write`; bounded list filters use parameterized SQL. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -94,7 +96,7 @@ id: WP-CAT-01
 title: Catalog Item Foundation
 tasks: [CAT-001, CAT-002]
 branch: work/wp-cat-01-catalog-items
-state: in_progress
+state: ready_for_pr
 pull_request: null
 ```
 
