@@ -119,6 +119,38 @@
     text-align: left;
 }
 
+.job-workspace {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin: 24px;
+    padding: 24px;
+}
+
+.job-material-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.job-material-form__actions,
+.job-material-list__actions {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.job-material-form__actions {
+    align-self: end;
+}
+
+.job-material-list__actions {
+    margin-top: 8px;
+}
+
+.job-material-list__actions .button {
+    min-height: 34px;
+    padding: 6px 10px;
+}
+
 .inventory-layout {
     display: grid;
     gap: 20px;
@@ -698,6 +730,10 @@
     }
 
     .design-inline-form {
+        grid-template-columns: 1fr;
+    }
+
+    .job-material-form {
         grid-template-columns: 1fr;
     }
 

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -20,16 +21,16 @@ func TestJobRepositoryNonCommercialLifecycleAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open()=%v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "TRUNCATE TABLE job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
+		_, _ = db.ExecContext(ctx, "TRUNCATE TABLE print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
 		_ = db.Close()
 	})
 	if err := Migrate(ctx, db); err != nil {
 		t.Fatalf("Migrate()=%v", err)
 	}
-	if _, err := db.ExecContext(ctx, "TRUNCATE TABLE job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
+	if _, err := db.ExecContext(ctx, "TRUNCATE TABLE print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
 		t.Fatalf("truncate=%v", err)
 	}
-	var userID, deviceID, itemID, partID, designID, printerID string
+	var userID, deviceID, itemID, partID, designID, printerID, materialID, spoolID string
 	if err := db.QueryRowContext(ctx, "INSERT INTO users(name,email_or_username,password_hash,status,role) VALUES('Operator','operator','$argon2id$test','active','operator') RETURNING id").Scan(&userID); err != nil {
 		t.Fatalf("user=%v", err)
 	}
@@ -48,6 +49,12 @@ func TestJobRepositoryNonCommercialLifecycleAgainstPostgreSQL(t *testing.T) {
 	if err := db.QueryRowContext(ctx, "INSERT INTO printers(name,manufacturer,model,nozzle_diameter,acquisition_cost_cents,residual_value_cents,useful_life_hours,maintenance_reserve_per_hour_cents) VALUES('A1','Bambu','A1',0.4,100000,10000,5000,20) RETURNING id").Scan(&printerID); err != nil {
 		t.Fatalf("printer=%v", err)
 	}
+	if err := db.QueryRowContext(ctx, "INSERT INTO materials(manufacturer,name,material_type,color_name,nominal_density,default_replacement_cost_per_kg_cents) VALUES('Talos','PLA Black','PLA','Black',1.24,12000) RETURNING id").Scan(&materialID); err != nil {
+		t.Fatalf("material=%v", err)
+	}
+	if err := db.QueryRowContext(ctx, "INSERT INTO material_spools(code,material_id,nominal_net_weight_g,tare_weight_g,purchase_cost_cents,replacement_cost_per_kg_cents,status) VALUES('SPOOL-JOB-1',$1,1000,250,10000,12000,'open') RETURNING id", materialID).Scan(&spoolID); err != nil {
+		t.Fatalf("spool=%v", err)
+	}
 	repo := NewJobRepository(db)
 	now := time.Date(2026, 9, 4, 21, 0, 0, 0, time.UTC)
 	actor := domain.Actor{UserID: userID, DeviceID: deviceID}
@@ -55,6 +62,31 @@ func TestJobRepositoryNonCommercialLifecycleAgainstPostgreSQL(t *testing.T) {
 	job, err := repo.Create(ctx, values, actor, now)
 	if err != nil || job.OrderItemID != nil || job.Purpose != domain.PurposeInternal {
 		t.Fatalf("Create()=%#v,%v", job, err)
+	}
+	historicalCost, replacementCost := int64(100), int64(120)
+	modelUsage, err := repo.CreateMaterialUsage(ctx, job.ID, domain.MaterialUsageValues{SpoolID: spoolID, Role: domain.MaterialRoleModel, PlannedGrams: "10.125", MeasurementSource: domain.SourceSlicer, HistoricalMaterialCostCents: &historicalCost, ReplacementMaterialCostCents: &replacementCost}, now)
+	if err != nil || modelUsage.MaterialID != materialID || modelUsage.MeasurementSource != domain.SourceSlicer || modelUsage.HistoricalMaterialCostCents == nil || *modelUsage.HistoricalMaterialCostCents != historicalCost {
+		t.Fatalf("CreateMaterialUsage(model)=%#v,%v", modelUsage, err)
+	}
+	supportUsage, err := repo.CreateMaterialUsage(ctx, job.ID, domain.MaterialUsageValues{SpoolID: spoolID, Role: domain.MaterialRoleSupport, PlannedGrams: "3.875", MeasurementSource: domain.SourceEstimated}, now)
+	if err != nil || supportUsage.Role != domain.MaterialRoleSupport {
+		t.Fatalf("CreateMaterialUsage(support)=%#v,%v", supportUsage, err)
+	}
+	if _, err := repo.CreateMaterialUsage(ctx, job.ID, domain.MaterialUsageValues{SpoolID: spoolID, Role: domain.MaterialRoleModel, PlannedGrams: "1", MeasurementSource: domain.SourceManual}, now); !errors.Is(err, domain.ErrMaterialUsageConflict) {
+		t.Fatalf("duplicate CreateMaterialUsage() error=%v, want conflict", err)
+	}
+	actual := "9.5"
+	changedCost := int64(999)
+	modelUsage, err = repo.UpdateMaterialUsage(ctx, job.ID, modelUsage.ID, domain.MaterialUsageValues{SpoolID: spoolID, Role: domain.MaterialRoleModel, PlannedGrams: "10.125", ActualGrams: &actual, MeasurementSource: domain.SourceSpoolWeightDelta, HistoricalMaterialCostCents: &changedCost, ReplacementMaterialCostCents: &changedCost}, now.Add(time.Second))
+	if err != nil || modelUsage.ActualGrams == nil || *modelUsage.ActualGrams != actual || modelUsage.MeasurementSource != domain.SourceSpoolWeightDelta || modelUsage.HistoricalMaterialCostCents == nil || *modelUsage.HistoricalMaterialCostCents != historicalCost || modelUsage.ReplacementMaterialCostCents == nil || *modelUsage.ReplacementMaterialCostCents != replacementCost {
+		t.Fatalf("UpdateMaterialUsage()=%#v,%v", modelUsage, err)
+	}
+	usages, err := repo.ListMaterialUsage(ctx, job.ID)
+	if err != nil || len(usages) != 2 {
+		t.Fatalf("ListMaterialUsage()=%#v,%v", usages, err)
+	}
+	if err := repo.DeleteMaterialUsage(ctx, job.ID, supportUsage.ID); err != nil {
+		t.Fatalf("DeleteMaterialUsage()=%v", err)
 	}
 	steps := []struct {
 		from, to domain.Status
@@ -73,5 +105,8 @@ func TestJobRepositoryNonCommercialLifecycleAgainstPostgreSQL(t *testing.T) {
 	events, err := repo.ListEvents(ctx, job.ID)
 	if err != nil || len(events) != 5 || events[0].Type != domain.EventCreated || events[4].Type != domain.EventReviewed || events[4].ActorUserID != userID || events[4].SourceDeviceID != deviceID {
 		t.Fatalf("ListEvents()=%#v,%v", events, err)
+	}
+	if _, err := repo.UpdateMaterialUsage(ctx, job.ID, modelUsage.ID, domain.MaterialUsageValues{SpoolID: spoolID, Role: domain.MaterialRoleModel, PlannedGrams: "10", MeasurementSource: domain.SourceManual}, now.Add(5*time.Minute)); !errors.Is(err, domain.ErrJobNotEditable) {
+		t.Fatalf("terminal UpdateMaterialUsage() error=%v, want not editable", err)
 	}
 }

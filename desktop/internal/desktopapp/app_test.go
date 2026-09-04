@@ -229,6 +229,27 @@ func TestInventoryOperationsKeepBearerTokenNative(t *testing.T) {
 	}
 }
 
+func TestJobMaterialUsageOperationsKeepBearerTokenNative(t *testing.T) {
+	remote := &connectionCheckerStub{jobs: []apiclient.Job{{ID: "job-id"}}, jobUsage: apiclient.JobMaterialUsageSummary{Items: []apiclient.JobMaterialUsage{}, TotalPlannedGrams: "0", TotalActualGrams: "0"}}
+	app := newApp(&connectionStoreStub{loaded: serverconnection.Configuration{ServerBaseURL: "http://workshop.local"}}, &sessionStoreStub{loaded: credentials.Session{Token: "native-jobs-token"}}, "1.2.0", func(string, string) (remoteClient, error) { return remote, nil })
+	if _, err := app.ListJobs(); err != nil || remote.jobToken != "native-jobs-token" {
+		t.Fatalf("ListJobs() error=%v token=%q", err, remote.jobToken)
+	}
+	if _, err := app.ListJobMaterialUsage("job-id"); err != nil || remote.jobID != "job-id" {
+		t.Fatalf("ListJobMaterialUsage() error=%v job=%q", err, remote.jobID)
+	}
+	input := apiclient.JobMaterialUsageInput{SpoolID: "spool-id", PlannedGrams: "8", MeasurementSource: "slicer"}
+	if _, err := app.CreateJobMaterialUsage("job-id", input); err != nil || remote.jobUsageInput.PlannedGrams != "8" {
+		t.Fatalf("CreateJobMaterialUsage() error=%v input=%#v", err, remote.jobUsageInput)
+	}
+	if _, err := app.UpdateJobMaterialUsage("job-id", "usage-id", input); err != nil || remote.jobUsageID != "usage-id" {
+		t.Fatalf("UpdateJobMaterialUsage() error=%v usage=%q", err, remote.jobUsageID)
+	}
+	if err := app.DeleteJobMaterialUsage("job-id", "usage-id"); err != nil || remote.jobUsageID != "usage-id" {
+		t.Fatalf("DeleteJobMaterialUsage() error=%v usage=%q", err, remote.jobUsageID)
+	}
+}
+
 type connectionStoreStub struct {
 	loaded    serverconnection.Configuration
 	loadError error
@@ -289,6 +310,12 @@ type connectionCheckerStub struct {
 	bomCatalogID      string
 	bomItemID         string
 	bomInput          apiclient.CatalogBOMInput
+	jobs              []apiclient.Job
+	jobUsage          apiclient.JobMaterialUsageSummary
+	jobToken          string
+	jobID             string
+	jobUsageID        string
+	jobUsageInput     apiclient.JobMaterialUsageInput
 }
 
 func (stub *connectionCheckerStub) Login(_ context.Context, input apiclient.LoginInput) (apiclient.LoginResult, error) {
@@ -392,6 +419,27 @@ func (stub *connectionCheckerStub) RecordSupplyMovement(_ context.Context, token
 func (stub *connectionCheckerStub) ListLowInventory(_ context.Context, token, threshold string) (apiclient.LowInventory, error) {
 	stub.inventoryToken, stub.lowThreshold = token, threshold
 	return apiclient.LowInventory{Spools: []apiclient.Spool{}, Supplies: []apiclient.Supply{}}, stub.catalogError
+}
+
+func (stub *connectionCheckerStub) ListJobs(_ context.Context, token string) ([]apiclient.Job, error) {
+	stub.jobToken = token
+	return stub.jobs, stub.catalogError
+}
+func (stub *connectionCheckerStub) ListJobMaterialUsage(_ context.Context, token, jobID string) (apiclient.JobMaterialUsageSummary, error) {
+	stub.jobToken, stub.jobID = token, jobID
+	return stub.jobUsage, stub.catalogError
+}
+func (stub *connectionCheckerStub) CreateJobMaterialUsage(_ context.Context, token, jobID string, input apiclient.JobMaterialUsageInput) (apiclient.JobMaterialUsage, error) {
+	stub.jobToken, stub.jobID, stub.jobUsageInput = token, jobID, input
+	return apiclient.JobMaterialUsage{SpoolID: input.SpoolID}, stub.catalogError
+}
+func (stub *connectionCheckerStub) UpdateJobMaterialUsage(_ context.Context, token, jobID, usageID string, input apiclient.JobMaterialUsageInput) (apiclient.JobMaterialUsage, error) {
+	stub.jobToken, stub.jobID, stub.jobUsageID, stub.jobUsageInput = token, jobID, usageID, input
+	return apiclient.JobMaterialUsage{ID: usageID}, stub.catalogError
+}
+func (stub *connectionCheckerStub) DeleteJobMaterialUsage(_ context.Context, token, jobID, usageID string) error {
+	stub.jobToken, stub.jobID, stub.jobUsageID = token, jobID, usageID
+	return stub.catalogError
 }
 
 type sessionStoreStub struct {

@@ -52,6 +52,7 @@ var testSupplyInventoryService = supplyInventoryServiceStub{}
 var testCatalogBOMService = catalogBOMServiceStub{}
 var testPrinterService = printerServiceStub{}
 var testJobService = jobServiceStub{}
+var testJobMaterialUsageService = jobMaterialUsageServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -78,6 +79,7 @@ type supplyInventoryServiceStub struct{}
 type catalogBOMServiceStub struct{}
 type printerServiceStub struct{}
 type jobServiceStub struct{}
+type jobMaterialUsageServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -472,6 +474,17 @@ func (jobServiceStub) ListEvents(context.Context, string) ([]domainjobs.Event, e
 	return []domainjobs.Event{}, nil
 }
 
+func (jobMaterialUsageServiceStub) Create(context.Context, string, domainjobs.MaterialUsageValues) (domainjobs.MaterialUsage, error) {
+	return domainjobs.MaterialUsage{}, nil
+}
+func (jobMaterialUsageServiceStub) List(context.Context, string) (domainjobs.MaterialUsageSummary, error) {
+	return domainjobs.MaterialUsageSummary{Items: []domainjobs.MaterialUsage{}, TotalPlannedGrams: "0", TotalActualGrams: "0"}, nil
+}
+func (jobMaterialUsageServiceStub) Update(context.Context, string, string, domainjobs.MaterialUsageValues) (domainjobs.MaterialUsage, error) {
+	return domainjobs.MaterialUsage{}, nil
+}
+func (jobMaterialUsageServiceStub) Delete(context.Context, string, string) error { return nil }
+
 func TestHandlerRegistersFiles(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
 	request.Header.Set("Authorization", "Bearer test-token")
@@ -546,6 +559,16 @@ func TestHandlerRegistersJobs(t *testing.T) {
 	}
 }
 
+func TestHandlerRegistersJobMaterialUsage(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.JobsPath+"/job-id/materials", nil)
+	request.Header.Set("Authorization", "Bearer test-token")
+	response := httptest.NewRecorder()
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+}
+
 func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.Handler {
 	t.Helper()
 	limiter, err := httpplatform.NewLoginRateLimiter(100, time.Minute)
@@ -572,5 +595,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		testCatalogBOMService,
 		testPrinterService,
 		testJobService,
+		testJobMaterialUsageService,
 	)
 }

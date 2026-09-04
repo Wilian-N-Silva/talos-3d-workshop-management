@@ -25,6 +25,15 @@ Draft, prepared, and printing Jobs may also be cancelled. A detected/manual
 printing failure can move `printing` directly to `failed`. Terminal Jobs cannot
 transition again.
 
+Migration `00016_job_material_usage.sql` adds N material usages per Job. Each
+record identifies a physical spool and its derived material, a role (`model`,
+`support`, `purge`, or `other`), exact planned/actual grams and optional meters,
+and the measurement source. The same spool may appear more than once when its
+role differs. Historical and replacement cost snapshot fields are separate,
+nullable integer cents. Once captured, those cost snapshots are immutable even
+when quantities or measurement source are corrected; recording usage never
+creates revenue.
+
 ## Quality review
 
 Printer completion moves a Job to `awaiting_review`; it does not approve the
@@ -46,3 +55,9 @@ The resource root is `/api/v1/jobs`. List/get/events require `jobs.read`, create
 requires `jobs.create`, metadata updates/transitions/deletion require
 `jobs.update`, and quality review requires `jobs.evaluate`. Only draft or
 prepared metadata is editable, and only draft Jobs can be deleted.
+
+Material usage is available at `/api/v1/jobs/{jobID}/materials`. Reads require
+`jobs.read`; create, replace, and delete require `jobs.update`. The list response
+includes exact planned and actual gram totals. Usage may be added or corrected
+through `awaiting_review`; deletion is limited to draft and prepared Jobs so
+production evidence is not silently removed.

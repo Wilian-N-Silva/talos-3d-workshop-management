@@ -21,13 +21,13 @@ func TestPrinterRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open()=%v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE job_events, print_jobs, printers")
+		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE print_job_material_usage, job_events, print_jobs, printers")
 		_ = database.Close()
 	})
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate()=%v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE job_events, print_jobs, printers"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE print_job_material_usage, job_events, print_jobs, printers"); err != nil {
 		t.Fatalf("truncate=%v", err)
 	}
 	now := time.Date(2026, 9, 4, 20, 0, 0, 0, time.UTC)

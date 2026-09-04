@@ -202,6 +202,29 @@ export interface LowInventory {
     supplies: Supply[];
 }
 
+export type JobStatus = 'draft' | 'prepared' | 'printing' | 'awaiting_review' | 'completed' | 'failed' | 'cancelled';
+export interface Job {
+    id: string; code: string; catalog_item_id: string; design_version_id: string; printer_id: string;
+    order_item_id?: string | null; purpose: string; status: JobStatus; planned_quantity: number;
+    good_quantity: number; scrap_quantity: number; quality_status: string; created_at: string; updated_at: string;
+}
+export type MaterialRole = 'model' | 'support' | 'purge' | 'other';
+export type MeasurementSource = 'slicer' | 'spool_weight_delta' | 'manual' | 'printer' | 'estimated';
+export interface JobMaterialUsage {
+    id: string; print_job_id: string; material_id: string; spool_id: string; role: MaterialRole;
+    planned_grams: string; actual_grams?: string | null; planned_meters?: string | null; actual_meters?: string | null;
+    measurement_source: MeasurementSource; historical_material_cost_cents?: number | null;
+    replacement_material_cost_cents?: number | null; created_at: string; updated_at: string;
+}
+export interface JobMaterialUsageInput {
+    spool_id: string; role: MaterialRole; planned_grams: string; actual_grams?: string | null;
+    planned_meters?: string | null; actual_meters?: string | null; measurement_source: MeasurementSource;
+    historical_material_cost_cents?: number | null; replacement_material_cost_cents?: number | null;
+}
+export interface JobMaterialUsageSummary {
+    items: JobMaterialUsage[]; total_planned_grams: string; total_actual_grams: string;
+}
+
 export interface CatalogBOMItem {
     id: string;
     catalog_item_id: string;
@@ -264,6 +287,11 @@ interface NativeApp {
     ListSupplyMovements(supplyID: string): Promise<SupplyMovement[]>;
     RecordSupplyMovement(supplyID: string, input: SupplyMovementInput): Promise<SupplyMovement>;
     ListLowInventory(spoolThresholdG: string): Promise<LowInventory>;
+    ListJobs(): Promise<Job[]>;
+    ListJobMaterialUsage(jobID: string): Promise<JobMaterialUsageSummary>;
+    CreateJobMaterialUsage(jobID: string, input: JobMaterialUsageInput): Promise<JobMaterialUsage>;
+    UpdateJobMaterialUsage(jobID: string, usageID: string, input: JobMaterialUsageInput): Promise<JobMaterialUsage>;
+    DeleteJobMaterialUsage(jobID: string, usageID: string): Promise<void>;
 }
 
 declare global {
@@ -362,3 +390,8 @@ export async function createSupply(input: SupplyInput): Promise<Supply> { return
 export async function listSupplyMovements(supplyID: string): Promise<SupplyMovement[]> { return app().ListSupplyMovements(supplyID); }
 export async function recordSupplyMovement(supplyID: string, input: SupplyMovementInput): Promise<SupplyMovement> { return app().RecordSupplyMovement(supplyID, input); }
 export async function listLowInventory(spoolThresholdG = '100'): Promise<LowInventory> { return app().ListLowInventory(spoolThresholdG); }
+export async function listJobs(): Promise<Job[]> { return app().ListJobs(); }
+export async function listJobMaterialUsage(jobID: string): Promise<JobMaterialUsageSummary> { return app().ListJobMaterialUsage(jobID); }
+export async function createJobMaterialUsage(jobID: string, input: JobMaterialUsageInput): Promise<JobMaterialUsage> { return app().CreateJobMaterialUsage(jobID, input); }
+export async function updateJobMaterialUsage(jobID: string, usageID: string, input: JobMaterialUsageInput): Promise<JobMaterialUsage> { return app().UpdateJobMaterialUsage(jobID, usageID, input); }
+export async function deleteJobMaterialUsage(jobID: string, usageID: string): Promise<void> { return app().DeleteJobMaterialUsage(jobID, usageID); }

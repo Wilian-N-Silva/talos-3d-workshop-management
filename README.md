@@ -162,6 +162,12 @@ Manual print Jobs use `/api/v1/jobs`. They may be created for internal,
 prototype, test, maintenance, personal, or production use without commercial
 context. State transitions and explicit quality review remain separate, while
 significant events atomically retain the acting user and source desktop device.
+Per-Job filament usage is recorded at
+`/api/v1/jobs/{jobID}/materials`, with a physical spool, role, exact
+planned/actual quantities, visible measurement source, distinct historical and
+replacement cost snapshots, and exact aggregate gram totals. The desktop Jobs
+workspace supports selecting a spool, adding or editing planned/actual usage,
+and reviewing totals without introducing commercial context.
 
 The Windows desktop starts with an editable server connection screen. It
 persists only a credential-free HTTP(S) base URL in the current user's config
