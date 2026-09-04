@@ -71,6 +71,9 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
 | DESK-004 | verified_complete | Windows Credential Manager session store + expiry/restore/logout tests + Wails production build | 1c9e285 | Session credentials are server-scoped, absent from plaintext config, restored at startup, and deleted on logout. |
+| DESK-005 | verified_complete | safe native current-user/permission DTO + React permission context + authenticated settings/401/403 tests | 01a4cd2 | UI visibility uses concrete permissions; protected requests remain server-authorized and rejected sessions are removed. |
+| DESK-006 | verified_complete | fixed light/dark/system selector + CSS variable palettes + local preference/workshop-default policy | 01a4cd2 | Only the three PRD theme modes are accepted; system follows the OS color scheme. |
+| DESK-007 | verified_complete | native same-origin logo client + branded login/shell + fallback + dynamic Wails title | 01a4cd2 | Logo response is bounded to PNG/JPEG and never fetched directly by React. |
 
 Evidence should be concise, for example:
 
@@ -85,12 +88,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-DESK-02
-title: Desktop Login and Secure Session
-tasks: [DESK-003, DESK-004]
-branch: work/wp-desk-02-login-session
+id: WP-DESK-03
+title: Permission-Aware Branded Desktop Shell
+tasks: [DESK-005, DESK-006, DESK-007]
+branch: work/wp-desk-03-application-shell
 state: in_review
-pull_request: 28
+pull_request: 29
 ```
 
 Recommended `state` values:
@@ -110,6 +113,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-DESK-02 | DESK-003, DESK-004 | df61891 (PR #28) | Native login and Windows Credential Manager session persistence. |
 | WP-DESK-01 | DESK-001, DESK-002 | 01dc256 (PR #27) | Native server connection configuration and version-compatible API client. |
 | WP-SET-02 | FILE-001, SET-003 | 415c986 (PR #26) | Immutable file metadata and authorized current workshop logo. |
 | WP-SET-01 | SET-001, SET-002 | 8eeb208 (PR #25) | Persisted workshop settings and permission-aware API. |

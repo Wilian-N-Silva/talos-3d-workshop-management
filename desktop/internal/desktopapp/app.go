@@ -24,6 +24,8 @@ type connectionStore interface {
 type remoteClient interface {
 	CheckConnection(context.Context) (apiclient.ConnectionResult, error)
 	Login(context.Context, apiclient.LoginInput) (apiclient.LoginResult, error)
+	FetchBranding(context.Context) (apiclient.Branding, error)
+	GetWorkshopSettings(context.Context, string) (apiclient.WorkshopSettings, error)
 }
 
 type connectionClientFactory func(string, string) (remoteClient, error)
@@ -48,11 +50,21 @@ type ConnectionTestResult struct {
 
 // AuthenticationState is safe to expose to React and deliberately omits the token.
 type AuthenticationState struct {
-	Authenticated   bool   `json:"authenticated"`
-	UserID          string `json:"user_id,omitempty"`
-	UserName        string `json:"user_name,omitempty"`
-	EmailOrUsername string `json:"email_or_username,omitempty"`
-	ExpiresAt       string `json:"expires_at,omitempty"`
+	Authenticated   bool     `json:"authenticated"`
+	UserID          string   `json:"user_id,omitempty"`
+	UserName        string   `json:"user_name,omitempty"`
+	EmailOrUsername string   `json:"email_or_username,omitempty"`
+	ExpiresAt       string   `json:"expires_at,omitempty"`
+	Role            string   `json:"role,omitempty"`
+	Permissions     []string `json:"permissions"`
+}
+
+// ShellContext contains safe user, permission, theme, and branding data.
+type ShellContext struct {
+	Authentication AuthenticationState `json:"authentication"`
+	WorkshopName   string              `json:"workshop_name,omitempty"`
+	LogoDataURL    string              `json:"logo_data_url,omitempty"`
+	DefaultTheme   string              `json:"default_theme,omitempty"`
 }
 
 // App owns native desktop lifecycle and server connection state.
@@ -116,11 +128,75 @@ func (a *App) Login(emailOrUsername, password string) (AuthenticationState, erro
 		UserID:          result.User.ID,
 		UserName:        result.User.Name,
 		EmailOrUsername: result.User.EmailOrUsername,
+		Role:            result.User.Role,
+		Permissions:     append([]string(nil), result.User.Permissions...),
+		DeviceID:        result.Device.ID,
 	}
 	if err := a.sessions.Save(configuration.ServerBaseURL, session); err != nil {
 		return AuthenticationState{}, fmt.Errorf("secure session: %w", err)
 	}
 	return authenticationState(session), nil
+}
+
+// GetWorkshopBranding returns public branding without exposing server HTTP to React.
+func (a *App) GetWorkshopBranding() (apiclient.Branding, error) {
+	configuration, err := a.store.Load()
+	if err != nil {
+		return apiclient.Branding{}, fmt.Errorf("load server connection: %w", err)
+	}
+	if strings.TrimSpace(configuration.ServerBaseURL) == "" {
+		return apiclient.Branding{}, nil
+	}
+	client, err := a.newClient(configuration.ServerBaseURL, a.desktopVersion)
+	if err != nil {
+		return apiclient.Branding{}, fmt.Errorf("create API client: %w", err)
+	}
+	return client.FetchBranding(a.applicationContext())
+}
+
+// LoadShell validates the restored bearer session against an authenticated
+// server endpoint. A 401 clears the unusable local credential; a 403 remains a
+// visible authorization error and never bypasses the server decision.
+func (a *App) LoadShell() (ShellContext, error) {
+	configuration, err := a.store.Load()
+	if err != nil {
+		return ShellContext{}, fmt.Errorf("load server connection: %w", err)
+	}
+	if strings.TrimSpace(configuration.ServerBaseURL) == "" {
+		return ShellContext{}, nil
+	}
+	session, err := a.sessions.Load(configuration.ServerBaseURL)
+	if errors.Is(err, credentials.ErrNotFound) {
+		return ShellContext{}, nil
+	}
+	if err != nil {
+		return ShellContext{}, fmt.Errorf("restore secure session: %w", err)
+	}
+	client, err := a.newClient(configuration.ServerBaseURL, a.desktopVersion)
+	if err != nil {
+		return ShellContext{}, fmt.Errorf("create API client: %w", err)
+	}
+	settings, err := client.GetWorkshopSettings(a.applicationContext(), session.Token)
+	if err != nil {
+		var clientError *apiclient.ClientError
+		if errors.As(err, &clientError) && clientError.StatusCode == 401 {
+			if deleteErr := a.sessions.Delete(configuration.ServerBaseURL); deleteErr != nil {
+				return ShellContext{}, fmt.Errorf("remove rejected session: %w", deleteErr)
+			}
+			return ShellContext{}, nil
+		}
+		return ShellContext{}, err
+	}
+	branding, err := client.FetchBranding(a.applicationContext())
+	if err != nil {
+		branding = apiclient.Branding{WorkshopName: settings.WorkshopName}
+	}
+	return ShellContext{
+		Authentication: authenticationState(session),
+		WorkshopName:   settings.WorkshopName,
+		LogoDataURL:    branding.LogoDataURL,
+		DefaultTheme:   settings.DefaultTheme,
+	}, nil
 }
 
 // GetAuthenticationState restores a non-expired secure session at startup.
@@ -162,6 +238,8 @@ func authenticationState(session credentials.Session) AuthenticationState {
 		UserName:        session.UserName,
 		EmailOrUsername: session.EmailOrUsername,
 		ExpiresAt:       session.ExpiresAt.UTC().Format("2006-01-02T15:04:05Z07:00"),
+		Role:            session.Role,
+		Permissions:     append([]string(nil), session.Permissions...),
 	}
 }
 

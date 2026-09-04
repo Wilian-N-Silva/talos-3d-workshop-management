@@ -71,7 +71,7 @@ func TestAppLoginStoresTokenWithoutReturningItAndRestoresState(t *testing.T) {
 	expiresAt := time.Now().UTC().Add(time.Hour).Truncate(time.Second)
 	remote := &connectionCheckerStub{loginResult: apiclient.LoginResult{
 		Token: "opaque-token", ExpiresAt: expiresAt,
-		User:   apiclient.LoginUser{ID: "user-1", Name: "Workshop Owner", EmailOrUsername: "owner"},
+		User:   apiclient.LoginUser{ID: "user-1", Name: "Workshop Owner", EmailOrUsername: "owner", Role: "owner", Permissions: []string{"settings.manage"}},
 		Device: apiclient.LoginDevice{ID: "device-1"},
 	}}
 	secureStore := &sessionStoreStub{}
@@ -101,6 +101,51 @@ func TestAppLoginStoresTokenWithoutReturningItAndRestoresState(t *testing.T) {
 	}
 }
 
+func TestAppLoadsPermissionAwareBrandedShell(t *testing.T) {
+	session := credentials.Session{Token: "secure-token", ExpiresAt: time.Now().UTC().Add(time.Hour), UserID: "user-1", UserName: "Owner", EmailOrUsername: "owner", Role: "owner", Permissions: []string{"settings.manage"}, DeviceID: "device-1"}
+	remote := &connectionCheckerStub{
+		settings: apiclient.WorkshopSettings{WorkshopName: "Talos Lab", DefaultTheme: "system"},
+		branding: apiclient.Branding{WorkshopName: "Talos Lab", LogoDataURL: "data:image/png;base64,cG5n"},
+	}
+	app := newApp(
+		&connectionStoreStub{loaded: serverconnection.Configuration{ServerBaseURL: "http://workshop.local"}},
+		&sessionStoreStub{loaded: session},
+		"1.2.0",
+		func(string, string) (remoteClient, error) { return remote, nil },
+	)
+	context, err := app.LoadShell()
+	if err != nil || !context.Authentication.Authenticated || context.Authentication.Permissions[0] != "settings.manage" ||
+		context.WorkshopName != "Talos Lab" || context.DefaultTheme != "system" || context.LogoDataURL == "" {
+		t.Fatalf("LoadShell() = %#v, %v", context, err)
+	}
+	if remote.settingsToken != "secure-token" {
+		t.Fatalf("settings bearer token = %q", remote.settingsToken)
+	}
+}
+
+func TestAppHandlesUnauthorizedAndForbiddenServerResponses(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		wantError  bool
+		wantDelete bool
+	}{
+		{name: "unauthenticated", statusCode: 401, wantDelete: true},
+		{name: "forbidden", statusCode: 403, wantError: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			secureStore := &sessionStoreStub{loaded: credentials.Session{Token: "token"}}
+			remote := &connectionCheckerStub{settingsError: &apiclient.ClientError{Kind: apiclient.ErrorAPI, StatusCode: test.statusCode, Code: "authorization_error", Message: "denied"}}
+			app := newApp(&connectionStoreStub{loaded: serverconnection.Configuration{ServerBaseURL: "http://workshop.local"}}, secureStore, "1.2.0", func(string, string) (remoteClient, error) { return remote, nil })
+			context, err := app.LoadShell()
+			if (err != nil) != test.wantError || context.Authentication.Authenticated || (secureStore.deleted != "") != test.wantDelete {
+				t.Fatalf("LoadShell() = %#v, %v; deleted = %q", context, err, secureStore.deleted)
+			}
+		})
+	}
+}
+
 type connectionStoreStub struct {
 	loaded    serverconnection.Configuration
 	loadError error
@@ -122,16 +167,30 @@ func (stub *connectionStoreStub) Save(value string) (serverconnection.Configurat
 }
 
 type connectionCheckerStub struct {
-	result      apiclient.ConnectionResult
-	err         error
-	loginResult apiclient.LoginResult
-	loginError  error
-	loginInput  apiclient.LoginInput
+	result        apiclient.ConnectionResult
+	err           error
+	loginResult   apiclient.LoginResult
+	loginError    error
+	loginInput    apiclient.LoginInput
+	branding      apiclient.Branding
+	brandingErr   error
+	settings      apiclient.WorkshopSettings
+	settingsError error
+	settingsToken string
 }
 
 func (stub *connectionCheckerStub) Login(_ context.Context, input apiclient.LoginInput) (apiclient.LoginResult, error) {
 	stub.loginInput = input
 	return stub.loginResult, stub.loginError
+}
+
+func (stub *connectionCheckerStub) FetchBranding(context.Context) (apiclient.Branding, error) {
+	return stub.branding, stub.brandingErr
+}
+
+func (stub *connectionCheckerStub) GetWorkshopSettings(_ context.Context, token string) (apiclient.WorkshopSettings, error) {
+	stub.settingsToken = token
+	return stub.settings, stub.settingsError
 }
 
 type sessionStoreStub struct {

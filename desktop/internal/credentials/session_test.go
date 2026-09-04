@@ -11,7 +11,7 @@ func TestStoreRoundTripsAndDeletesSession(t *testing.T) {
 	backend := &memoryBackend{secrets: map[string][]byte{}}
 	now := time.Date(2026, 9, 3, 12, 0, 0, 0, time.UTC)
 	store := newStore(backend, func() time.Time { return now })
-	session := Session{Token: "opaque-token", ExpiresAt: now.Add(time.Hour), UserID: "user-1", UserName: "Owner", EmailOrUsername: "owner"}
+	session := Session{Token: "opaque-token", ExpiresAt: now.Add(time.Hour), UserID: "user-1", UserName: "Owner", EmailOrUsername: "owner", Role: "owner", Permissions: []string{"settings.manage"}, DeviceID: "device-1"}
 
 	if err := store.Save("http://workshop.local", session); err != nil {
 		t.Fatalf("Save() error = %v", err)
@@ -22,7 +22,7 @@ func TestStoreRoundTripsAndDeletesSession(t *testing.T) {
 		}
 	}
 	got, err := store.Load("http://workshop.local")
-	if err != nil || got != session {
+	if err != nil || got.Token != session.Token || got.Role != session.Role || len(got.Permissions) != 1 || got.Permissions[0] != "settings.manage" {
 		t.Fatalf("Load() = %#v, %v", got, err)
 	}
 	if err := store.Delete("http://workshop.local"); err != nil {
@@ -37,7 +37,7 @@ func TestStoreRemovesExpiredSession(t *testing.T) {
 	backend := &memoryBackend{secrets: map[string][]byte{}}
 	now := time.Date(2026, 9, 3, 12, 0, 0, 0, time.UTC)
 	store := newStore(backend, func() time.Time { return now })
-	if err := store.Save("https://workshop.local", Session{Token: "expired", ExpiresAt: now.Add(-time.Second), UserID: "user-1", UserName: "Owner", EmailOrUsername: "owner"}); err != nil {
+	if err := store.Save("https://workshop.local", Session{Token: "expired", ExpiresAt: now.Add(-time.Second), UserID: "user-1", UserName: "Owner", EmailOrUsername: "owner", Role: "owner", Permissions: []string{}, DeviceID: "device-1"}); err != nil {
 		t.Fatalf("Save() error = %v", err)
 	}
 	if _, err := store.Load("https://workshop.local"); !errors.Is(err, ErrNotFound) {

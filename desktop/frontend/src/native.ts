@@ -19,7 +19,23 @@ export interface AuthenticationState {
     user_name?: string;
     email_or_username?: string;
     expires_at?: string;
+    role?: string;
+    permissions?: string[];
 }
+
+export interface WorkshopBranding {
+    workshop_name: string;
+    logo_data_url?: string;
+}
+
+export interface ShellContext {
+    authentication: AuthenticationState;
+    workshop_name?: string;
+    logo_data_url?: string;
+    default_theme?: ThemeMode;
+}
+
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 interface NativeApp {
     GetServerConnection(): Promise<ServerConnection>;
@@ -28,6 +44,8 @@ interface NativeApp {
     Login(emailOrUsername: string, password: string): Promise<AuthenticationState>;
     GetAuthenticationState(): Promise<AuthenticationState>;
     Logout(): Promise<void>;
+    GetWorkshopBranding(): Promise<WorkshopBranding>;
+    LoadShell(): Promise<ShellContext>;
 }
 
 declare global {
@@ -70,4 +88,12 @@ export async function getAuthenticationState(): Promise<AuthenticationState> {
 
 export async function logout(): Promise<void> {
     return app().Logout();
+}
+
+export async function getWorkshopBranding(): Promise<WorkshopBranding> {
+    return app().GetWorkshopBranding();
+}
+
+export async function loadShell(): Promise<ShellContext> {
+    return app().LoadShell();
 }

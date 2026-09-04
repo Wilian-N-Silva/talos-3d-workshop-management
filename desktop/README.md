@@ -47,8 +47,25 @@ credential. The plaintext connection file never contains session data.
 
 At startup, a non-expired credential restores safe user metadata and opens the
 application shell. Logout deletes the local credential. Server-side session
-revocation UI and permission-aware navigation are introduced by later Work
-Packages.
+revocation UI is introduced by a later Work Package.
+
+## Application shell
+
+Native Go validates a restored session with the authenticated workshop-settings
+endpoint. A rejected 401 credential is removed locally; 403 responses remain
+visible and are never bypassed. Safe current-user metadata and the server-issued
+permission list feed a React permission context for route/action visibility,
+while server authorization remains authoritative.
+
+Login and shell display the workshop name and optional PNG/JPEG logo. Go
+downloads and validates the public same-origin logo and returns a data URL to
+React; a monogram is used when no valid logo is available. The window title
+tracks the workshop name.
+
+The desktop supports exactly `light`, `dark`, and `system`. A local non-secret
+preference overrides the workshop default and is stored in WebView local storage;
+`system` follows the Windows color-scheme preference. No custom theme inputs are
+supported.
 
 ## Production build
 
