@@ -14,6 +14,7 @@ import (
 
 	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
 	applicationcatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/catalog"
+	applicationenergy "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/energy"
 	applicationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/files"
 	applicationinventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/inventory"
 	applicationjobs "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/jobs"
@@ -147,6 +148,11 @@ func main() {
 		logger.Printf("server startup failed: initialize job material usage service: %v", err)
 		os.Exit(1)
 	}
+	energyService, err := applicationenergy.NewService(postgres.NewEnergyRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize energy service: %v", err)
+		os.Exit(1)
+	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
 	if serverConfig.UploadMaxBytes < maximumLogoBytes {
 		maximumLogoBytes = serverConfig.UploadMaxBytes
@@ -239,6 +245,7 @@ func main() {
 		printerService,
 		jobService,
 		jobMaterialUsageService,
+		energyService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -266,6 +273,7 @@ func newHandler(
 	printers httpplatform.PrinterService,
 	jobs httpplatform.JobService,
 	jobMaterialUsage httpplatform.JobMaterialUsageService,
+	energy httpplatform.EnergyService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -286,6 +294,7 @@ func newHandler(
 	httpplatform.RegisterPrinters(apiRouter, authentication, printers)
 	httpplatform.RegisterJobs(apiRouter, authentication, jobs)
 	httpplatform.RegisterJobMaterialUsage(apiRouter, authentication, jobMaterialUsage)
+	httpplatform.RegisterEnergy(apiRouter, authentication, energy)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux

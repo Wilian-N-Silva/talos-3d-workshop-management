@@ -168,6 +168,11 @@ planned/actual quantities, visible measurement source, distinct historical and
 replacement cost snapshots, and exact aggregate gram totals. The desktop Jobs
 workspace supports selecting a spool, adding or editing planned/actual usage,
 and reviewing totals without introducing commercial context.
+Job energy evidence is recorded and listed at `/api/v1/jobs/{jobID}/energy`.
+Meter, direct-measurement, imported, and estimated sources retain exact values,
+the authenticated recorder, occurrence time, and the tariff snapshot used at
+entry time. Estimation does not hide a utilization factor or calculate cost at
+this stage.
 
 The Windows desktop starts with an editable server connection screen. It
 persists only a credential-free HTTP(S) base URL in the current user's config
