@@ -71,6 +71,7 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | FILE-003 | verified_complete | permission-protected file-by-ID route + repository/storage streaming + 404/403/header tests | e3e9947 | `files.read` is enforced; downloads use safe attachment disposition and server-controlled object keys. |
 | CAT-001 | verified_complete | migration `00009_catalog_items` + catalog domain/service + PostgreSQL repository integration test | a071f31 | Purpose/status checks, optional SKU, sellable flag, UTC timestamps, and normalized JSONB tags are persisted. |
 | CAT-002 | verified_complete | permission-protected catalog CRUD routes + validation/pagination/filter tests | a071f31 | Reads require `catalog.read`; mutations require `catalog.write`; bounded list filters use parameterized SQL. |
+| CAT-003 | verified_complete | native catalog API client/Wails methods + permission-aware React list/detail/editor + production Wails build | fad96b7 | Purpose/status are visible; create/edit affordances require `catalog.write`; bearer credentials remain native-only. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -96,7 +97,7 @@ id: WP-CAT-01
 title: Catalog Items Vertical Slice
 tasks: [CAT-001, CAT-002, CAT-003]
 branch: work/wp-cat-01-catalog-items
-state: in_progress
+state: ready_for_pr
 pull_request: null
 ```
 
