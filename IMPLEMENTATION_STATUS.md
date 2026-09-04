@@ -93,10 +93,10 @@ Do not paste large diffs or lengthy summaries into this table.
 
 ```yaml
 id: WP-CAT-01
-title: Catalog Item Foundation
-tasks: [CAT-001, CAT-002]
+title: Catalog Items Vertical Slice
+tasks: [CAT-001, CAT-002, CAT-003]
 branch: work/wp-cat-01-catalog-items
-state: ready_for_pr
+state: in_progress
 pull_request: null
 ```
 

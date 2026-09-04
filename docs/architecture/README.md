@@ -12,6 +12,7 @@ Current documents:
 - [Desktop login](login.md)
 - [Desktop authentication boundary](desktop-authentication.md)
 - [Desktop permission-aware branded shell](desktop-shell.md)
+- [Desktop catalog workspace](desktop-catalog.md)
 - [Client-device persistence](client-devices.md)
 - [Desktop sessions](sessions.md)
 - [User persistence](users.md)

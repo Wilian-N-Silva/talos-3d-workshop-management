@@ -36,6 +36,36 @@ export interface ShellContext {
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
+export type CatalogPurpose = 'product' | 'prototype' | 'tooling' | 'test' | 'internal' | 'personal';
+export type CatalogStatus = 'active' | 'archived';
+
+export interface CatalogItem {
+    id: string;
+    name: string;
+    sku?: string | null;
+    description: string;
+    purpose: CatalogPurpose;
+    sellable: boolean;
+    tags: string[];
+    status: CatalogStatus;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CatalogItemInput {
+    name: string;
+    sku?: string | null;
+    description: string;
+    purpose: CatalogPurpose;
+    sellable: boolean;
+    tags: string[];
+    status: CatalogStatus;
+}
+
+export interface CatalogPage {
+    items: CatalogItem[];
+    pagination: {limit: number; offset: number; total: number};
+}
 
 interface NativeApp {
     GetServerConnection(): Promise<ServerConnection>;
@@ -46,6 +76,9 @@ interface NativeApp {
     Logout(): Promise<void>;
     GetWorkshopBranding(): Promise<WorkshopBranding>;
     LoadShell(): Promise<ShellContext>;
+    ListCatalogItems(): Promise<CatalogPage>;
+    CreateCatalogItem(input: CatalogItemInput): Promise<CatalogItem>;
+    UpdateCatalogItem(id: string, input: CatalogItemInput): Promise<CatalogItem>;
 }
 
 declare global {
@@ -96,4 +129,16 @@ export async function getWorkshopBranding(): Promise<WorkshopBranding> {
 
 export async function loadShell(): Promise<ShellContext> {
     return app().LoadShell();
+}
+
+export async function listCatalogItems(): Promise<CatalogPage> {
+    return app().ListCatalogItems();
+}
+
+export async function createCatalogItem(input: CatalogItemInput): Promise<CatalogItem> {
+    return app().CreateCatalogItem(input);
+}
+
+export async function updateCatalogItem(id: string, input: CatalogItemInput): Promise<CatalogItem> {
+    return app().UpdateCatalogItem(id, input);
 }

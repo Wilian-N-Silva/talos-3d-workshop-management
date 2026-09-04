@@ -1,6 +1,7 @@
 import {FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import {WindowSetTitle} from '../wailsjs/runtime/runtime';
 import './App.css';
+import {CatalogWorkspace} from './CatalogWorkspace';
 import {
     AuthenticationState,
     ConnectionTestResult,
@@ -210,11 +211,10 @@ function App() {
                             </button>
                         </div>
                     </header>
-                    <section className="app-shell__empty">
-                        <h1>Sessão iniciada</h1>
-                        <p>A navegação da oficina será adicionada nos próximos pacotes.</p>
-                        {feedback && <p className={`feedback feedback--${feedback.tone}`} role="status">{feedback.message}</p>}
-                    </section>
+                    <PermissionGate permission="catalog.read">
+                        <CatalogWorkspace canWrite={(authentication.permissions ?? []).includes('catalog.write')} />
+                    </PermissionGate>
+                    {feedback && <p className={`feedback feedback--${feedback.tone}`} role="status">{feedback.message}</p>}
                 </main>
             </PermissionProvider>
         );

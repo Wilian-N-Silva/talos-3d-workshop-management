@@ -26,6 +26,9 @@ type remoteClient interface {
 	Login(context.Context, apiclient.LoginInput) (apiclient.LoginResult, error)
 	FetchBranding(context.Context) (apiclient.Branding, error)
 	GetWorkshopSettings(context.Context, string) (apiclient.WorkshopSettings, error)
+	ListCatalogItems(context.Context, string) (apiclient.CatalogPage, error)
+	CreateCatalogItem(context.Context, string, apiclient.CatalogItemInput) (apiclient.CatalogItem, error)
+	UpdateCatalogItem(context.Context, string, string, apiclient.CatalogItemInput) (apiclient.CatalogItem, error)
 }
 
 type connectionClientFactory func(string, string) (remoteClient, error)
@@ -229,6 +232,77 @@ func (a *App) Logout() error {
 		return nil
 	}
 	return a.sessions.Delete(configuration.ServerBaseURL)
+}
+
+// ListCatalogItems returns the bounded catalog page without exposing the bearer token.
+func (a *App) ListCatalogItems() (apiclient.CatalogPage, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.CatalogPage{}, err
+	}
+	page, err := client.ListCatalogItems(a.applicationContext(), session.Token)
+	if err != nil {
+		return apiclient.CatalogPage{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return page, nil
+}
+
+// CreateCatalogItem creates one item through the native authenticated client.
+func (a *App) CreateCatalogItem(input apiclient.CatalogItemInput) (apiclient.CatalogItem, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.CatalogItem{}, err
+	}
+	item, err := client.CreateCatalogItem(a.applicationContext(), session.Token, input)
+	if err != nil {
+		return apiclient.CatalogItem{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return item, nil
+}
+
+// UpdateCatalogItem replaces editable item fields through the native authenticated client.
+func (a *App) UpdateCatalogItem(id string, input apiclient.CatalogItemInput) (apiclient.CatalogItem, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.CatalogItem{}, err
+	}
+	item, err := client.UpdateCatalogItem(a.applicationContext(), session.Token, id, input)
+	if err != nil {
+		return apiclient.CatalogItem{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return item, nil
+}
+
+func (a *App) authenticatedClient() (remoteClient, credentials.Session, string, error) {
+	configuration, err := a.store.Load()
+	if err != nil {
+		return nil, credentials.Session{}, "", fmt.Errorf("load server connection: %w", err)
+	}
+	if strings.TrimSpace(configuration.ServerBaseURL) == "" {
+		return nil, credentials.Session{}, "", errors.New("configure the workshop server before continuing")
+	}
+	session, err := a.sessions.Load(configuration.ServerBaseURL)
+	if errors.Is(err, credentials.ErrNotFound) {
+		return nil, credentials.Session{}, "", errors.New("authentication required")
+	}
+	if err != nil {
+		return nil, credentials.Session{}, "", fmt.Errorf("restore secure session: %w", err)
+	}
+	client, err := a.newClient(configuration.ServerBaseURL, a.desktopVersion)
+	if err != nil {
+		return nil, credentials.Session{}, "", fmt.Errorf("create API client: %w", err)
+	}
+	return client, session, configuration.ServerBaseURL, nil
+}
+
+func (a *App) handleAuthenticatedError(baseURL string, err error) error {
+	var clientError *apiclient.ClientError
+	if errors.As(err, &clientError) && clientError.StatusCode == 401 {
+		if deleteErr := a.sessions.Delete(baseURL); deleteErr != nil {
+			return fmt.Errorf("remove rejected session: %w", deleteErr)
+		}
+	}
+	return err
 }
 
 func authenticationState(session credentials.Session) AuthenticationState {
