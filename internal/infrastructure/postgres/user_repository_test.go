@@ -32,7 +32,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users"); err != nil {
 		t.Fatalf("truncate user bootstrap tables: %v", err)
 	}
 
@@ -136,7 +136,7 @@ func TestUserRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("NeedsSetup() with existing user = %t, %v, want false", needsSetup, err)
 	}
 
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users"); err != nil {
 		t.Fatalf("reset user bootstrap tables: %v", err)
 	}
 	if needsSetup, err := repository.NeedsSetup(ctx); err != nil || !needsSetup {

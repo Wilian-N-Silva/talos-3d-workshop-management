@@ -385,6 +385,51 @@
     padding-top: 24px;
 }
 
+.supply-bom {
+    border-top: 1px solid var(--border);
+    margin-top: 28px;
+    padding-top: 24px;
+}
+
+.supply-bom__table {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.supply-bom__line {
+    align-items: center;
+    background: var(--surface-subtle);
+    border-radius: 10px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) auto;
+    padding: 14px;
+}
+
+.supply-bom__line > div {
+    display: grid;
+    gap: 4px;
+}
+
+.supply-bom__line span,
+.supply-bom__total small {
+    color: var(--text-muted);
+}
+
+.supply-bom__actions {
+    display: flex !important;
+    gap: 8px !important;
+}
+
+.supply-bom__total {
+    margin: 4px 0 0;
+}
+
+.design-inline-form.supply-bom__form {
+    grid-template-columns: minmax(180px, 1fr) minmax(130px, .65fr) minmax(110px, .5fr) minmax(160px, 1fr) auto auto;
+}
+
 .design-history__heading h3,
 .design-versions h4 {
     margin: 0;

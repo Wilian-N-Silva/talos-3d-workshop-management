@@ -9,6 +9,7 @@ var (
 	ErrSupplyNotFound      = errors.New("supply not found")
 	ErrSupplySKUConflict   = errors.New("supply SKU already exists")
 	ErrSupplyHistoryExists = errors.New("supply movement history prevents deletion")
+	ErrSupplyInUse         = errors.New("supply is used by a catalog BOM")
 	ErrInsufficientStock   = errors.New("supply movement would make stock negative")
 )
 

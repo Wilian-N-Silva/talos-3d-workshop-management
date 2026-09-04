@@ -239,6 +239,8 @@ func writeInventoryError(w http.ResponseWriter, err error) {
 		WriteError(w, http.StatusConflict, "supply_sku_exists", "Supply SKU already exists", nil)
 	case errors.Is(err, domain.ErrSupplyHistoryExists):
 		WriteError(w, http.StatusConflict, "supply_history_exists", "Supply movement history prevents deletion", nil)
+	case errors.Is(err, domain.ErrSupplyInUse):
+		WriteError(w, http.StatusConflict, "supply_in_use", "Supply is used by a catalog BOM", nil)
 	case errors.Is(err, domain.ErrInsufficientStock):
 		WriteError(w, http.StatusConflict, "insufficient_stock", "Movement would make supply stock negative", nil)
 	default:
