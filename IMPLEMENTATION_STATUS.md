@@ -86,6 +86,10 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | INV-006 | verified_complete | derived low-inventory query + configurable spool threshold + desktop item list | 6579bdf | Positive supply minimums and active measured spools are queried directly; no alert table or persisted alert state exists. |
 | BOM-001 | verified_complete | migration `00013_catalog_bom` + exact-decimal service/repository/routes + native client and catalog BOM UI | f09a8ad | Supply quantity and waste CRUD produce a non-persisted exact replacement-cost preview without inventing a cent-rounding rule. |
 | PRN-001 | verified_complete | migration `00014_printers` + validated logical printer service/repository and permission-protected CRUD routes | 0319efb | Exact nozzle/lifetime values and cents-based costing inputs are stored without access codes or any server-to-printer path. |
+| JOB-001 | verified_complete | migration `00015_print_jobs` + validated domain/service + transactional PostgreSQL repository test | fb4b840 | All purposes/statuses and lifecycle quantities are persisted; internal Job creation requires no commercial context and leaves `order_item_id` null. |
+| JOB-002 | verified_complete | permission-protected Job CRUD and conditional transition routes/service tests | fb4b840 | Manual transitions follow the defined state graph; stale, invalid, terminal, and non-editable operations are rejected. |
+| JOB-005 | verified_complete | explicit awaiting-review service/route + approved/partial/failed quantity validation | fb4b840 | Printer completion remains distinct from quality; review records good/scrap output and determines the terminal Job state. |
+| JOB-006 | verified_complete | append-only `job_events` + atomic create/transition/review writes and history API | fb4b840 | Significant events retain actor user/source device and bounded metadata; no high-frequency telemetry is recorded. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -107,10 +111,10 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-PRN-01
-title: Logical Printer Registry
-tasks: [PRN-001]
-branch: work/wp-prn-01-printer-registry
+id: WP-JOB-01
+title: Manual Print Job Lifecycle
+tasks: [JOB-001, JOB-002, JOB-005, JOB-006]
+branch: work/wp-job-01-lifecycle
 state: ready_for_pr
 pull_request: null
 ```
@@ -132,6 +136,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-JOB-01 | JOB-001, JOB-002, JOB-005, JOB-006 | fb4b840 (local, unpushed) | Non-commercial-capable manual Job lifecycle, explicit quality review, and atomic append-only audit events. |
 | WP-PRN-01 | PRN-001 | 0319efb (local, unpushed) | Non-sensitive logical printer registry with exact costing inputs and secured CRUD API. |
 | WP-CAT-03 | BOM-001 | f09a8ad (local, unpushed) | Supply BOM CRUD and exact replacement-cost preview for commercial and internal catalog items. |
 | WP-INV-02 | INV-004, INV-005, INV-006 | 6579bdf (local, unpushed) | Supply CRUD, atomic auditable movements, explicit no-negative-stock policy, and derived low-inventory UI. |

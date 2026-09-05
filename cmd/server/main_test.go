@@ -21,6 +21,7 @@ import (
 	domaincatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/catalog"
 	domainfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/files"
 	domaininventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/inventory"
+	domainjobs "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/jobs"
 	domainprinters "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/printers"
 	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
@@ -50,6 +51,7 @@ var testFilamentInventoryService = filamentInventoryServiceStub{}
 var testSupplyInventoryService = supplyInventoryServiceStub{}
 var testCatalogBOMService = catalogBOMServiceStub{}
 var testPrinterService = printerServiceStub{}
+var testJobService = jobServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -75,6 +77,7 @@ type filamentInventoryServiceStub struct{}
 type supplyInventoryServiceStub struct{}
 type catalogBOMServiceStub struct{}
 type printerServiceStub struct{}
+type jobServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -448,6 +451,26 @@ func (printerServiceStub) Update(context.Context, string, domainprinters.Values)
 	return domainprinters.Printer{}, nil
 }
 func (printerServiceStub) Delete(context.Context, string) error { return nil }
+func (jobServiceStub) Create(context.Context, domainjobs.Values, domainjobs.Actor) (domainjobs.Job, error) {
+	return domainjobs.Job{}, nil
+}
+func (jobServiceStub) Get(context.Context, string) (domainjobs.Job, error) {
+	return domainjobs.Job{}, nil
+}
+func (jobServiceStub) List(context.Context) ([]domainjobs.Job, error) { return []domainjobs.Job{}, nil }
+func (jobServiceStub) Update(context.Context, string, domainjobs.Values) (domainjobs.Job, error) {
+	return domainjobs.Job{}, nil
+}
+func (jobServiceStub) Transition(context.Context, string, domainjobs.TransitionValues, domainjobs.Actor) (domainjobs.Job, error) {
+	return domainjobs.Job{}, nil
+}
+func (jobServiceStub) Review(context.Context, string, domainjobs.ReviewValues, domainjobs.Actor) (domainjobs.Job, error) {
+	return domainjobs.Job{}, nil
+}
+func (jobServiceStub) Delete(context.Context, string) error { return nil }
+func (jobServiceStub) ListEvents(context.Context, string) ([]domainjobs.Event, error) {
+	return []domainjobs.Event{}, nil
+}
 
 func TestHandlerRegistersFiles(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
@@ -513,6 +536,16 @@ func TestHandlerRegistersPrinters(t *testing.T) {
 	}
 }
 
+func TestHandlerRegistersJobs(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.JobsPath, nil)
+	request.Header.Set("Authorization", "Bearer test-token")
+	response := httptest.NewRecorder()
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+}
+
 func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.Handler {
 	t.Helper()
 	limiter, err := httpplatform.NewLoginRateLimiter(100, time.Minute)
@@ -538,5 +571,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		testSupplyInventoryService,
 		testCatalogBOMService,
 		testPrinterService,
+		testJobService,
 	)
 }

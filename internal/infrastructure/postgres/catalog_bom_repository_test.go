@@ -22,13 +22,13 @@ func TestCatalogBOMRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open()=%v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
+		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
 		_ = database.Close()
 	})
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate()=%v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
 		t.Fatalf("truncate=%v", err)
 	}
 	now := time.Date(2026, 9, 4, 18, 0, 0, 0, time.UTC)

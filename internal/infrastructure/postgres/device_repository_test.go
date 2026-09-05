@@ -31,7 +31,7 @@ func TestClientDeviceRepositoryAgainstPostgreSQL(t *testing.T) {
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE sessions, client_devices"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE job_events, sessions, client_devices"); err != nil {
 		t.Fatalf("truncate client devices: %v", err)
 	}
 
