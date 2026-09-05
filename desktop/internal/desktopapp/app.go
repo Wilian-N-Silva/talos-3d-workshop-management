@@ -22,6 +22,9 @@ type connectionStore interface {
 }
 
 type remoteClient interface {
+	ListLaborRates(context.Context, string) ([]apiclient.LaborRate, error)
+	SaveLaborRate(context.Context, string, string, apiclient.LaborRateInput) (apiclient.LaborRate, error)
+	SuggestLaborRate(context.Context, string, apiclient.LaborAssumptions) (apiclient.LaborSuggestion, error)
 	CheckConnection(context.Context) (apiclient.ConnectionResult, error)
 	Login(context.Context, apiclient.LoginInput) (apiclient.LoginResult, error)
 	FetchBranding(context.Context) (apiclient.Branding, error)

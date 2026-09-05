@@ -4,6 +4,7 @@ import './App.css';
 import {CatalogWorkspace} from './CatalogWorkspace';
 import {InventoryWorkspace} from './InventoryWorkspace';
 import {JobWorkspace} from './JobWorkspace';
+import {LaborWorkspace} from './LaborWorkspace';
 import {
     AuthenticationState,
     ConnectionTestResult,
@@ -218,6 +219,9 @@ function App() {
                     </PermissionGate>
                     <PermissionGate permission="inventory.read">
                         <InventoryWorkspace canWrite={(authentication.permissions ?? []).includes('inventory.write')} />
+                    </PermissionGate>
+                    <PermissionGate permission="costing.read">
+                        <LaborWorkspace canManage={(authentication.permissions ?? []).includes('costing.manage')} />
                     </PermissionGate>
                     <PermissionGate permission="jobs.read">
                         <JobWorkspace canWrite={(authentication.permissions ?? []).includes('jobs.update')} />
