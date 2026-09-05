@@ -146,6 +146,41 @@ func TestAppHandlesUnauthorizedAndForbiddenServerResponses(t *testing.T) {
 	}
 }
 
+func TestCatalogOperationsKeepBearerTokenInNativeLayer(t *testing.T) {
+	page := apiclient.CatalogPage{Items: []apiclient.CatalogItem{{ID: "item-id", Name: "Cube"}}}
+	remote := &connectionCheckerStub{catalogPage: page, catalogItem: apiclient.CatalogItem{ID: "item-id", Name: "Cube"}}
+	secureStore := &sessionStoreStub{loaded: credentials.Session{Token: "native-only-token"}}
+	app := newApp(
+		&connectionStoreStub{loaded: serverconnection.Configuration{ServerBaseURL: "http://workshop.local"}},
+		secureStore, "1.2.0", func(string, string) (remoteClient, error) { return remote, nil },
+	)
+	listed, err := app.ListCatalogItems()
+	if err != nil || len(listed.Items) != 1 || remote.catalogToken != "native-only-token" {
+		t.Fatalf("ListCatalogItems() = %#v, %v; token = %q", listed, err, remote.catalogToken)
+	}
+	input := apiclient.CatalogItemInput{Name: "Cube", Purpose: "test", Status: "active"}
+	if _, err := app.CreateCatalogItem(input); err != nil || remote.catalogInput.Name != "Cube" {
+		t.Fatalf("CreateCatalogItem() error = %v, input = %#v", err, remote.catalogInput)
+	}
+	if _, err := app.UpdateCatalogItem("item-id", input); err != nil || remote.catalogID != "item-id" {
+		t.Fatalf("UpdateCatalogItem() error = %v, id = %q", err, remote.catalogID)
+	}
+}
+
+func TestCatalogUnauthorizedClearsRejectedSession(t *testing.T) {
+	remote := &connectionCheckerStub{catalogError: &apiclient.ClientError{
+		Kind: apiclient.ErrorAPI, StatusCode: 401, Code: "unauthenticated", Message: "Authentication required",
+	}}
+	secureStore := &sessionStoreStub{loaded: credentials.Session{Token: "expired-token"}}
+	app := newApp(
+		&connectionStoreStub{loaded: serverconnection.Configuration{ServerBaseURL: "http://workshop.local"}},
+		secureStore, "1.2.0", func(string, string) (remoteClient, error) { return remote, nil },
+	)
+	if _, err := app.ListCatalogItems(); err == nil || secureStore.deleted != "http://workshop.local" {
+		t.Fatalf("ListCatalogItems() error = %v; deleted = %q", err, secureStore.deleted)
+	}
+}
+
 type connectionStoreStub struct {
 	loaded    serverconnection.Configuration
 	loadError error
@@ -177,6 +212,12 @@ type connectionCheckerStub struct {
 	settings      apiclient.WorkshopSettings
 	settingsError error
 	settingsToken string
+	catalogPage   apiclient.CatalogPage
+	catalogItem   apiclient.CatalogItem
+	catalogError  error
+	catalogToken  string
+	catalogInput  apiclient.CatalogItemInput
+	catalogID     string
 }
 
 func (stub *connectionCheckerStub) Login(_ context.Context, input apiclient.LoginInput) (apiclient.LoginResult, error) {
@@ -191,6 +232,21 @@ func (stub *connectionCheckerStub) FetchBranding(context.Context) (apiclient.Bra
 func (stub *connectionCheckerStub) GetWorkshopSettings(_ context.Context, token string) (apiclient.WorkshopSettings, error) {
 	stub.settingsToken = token
 	return stub.settings, stub.settingsError
+}
+
+func (stub *connectionCheckerStub) ListCatalogItems(_ context.Context, token string) (apiclient.CatalogPage, error) {
+	stub.catalogToken = token
+	return stub.catalogPage, stub.catalogError
+}
+
+func (stub *connectionCheckerStub) CreateCatalogItem(_ context.Context, token string, input apiclient.CatalogItemInput) (apiclient.CatalogItem, error) {
+	stub.catalogToken, stub.catalogInput = token, input
+	return stub.catalogItem, stub.catalogError
+}
+
+func (stub *connectionCheckerStub) UpdateCatalogItem(_ context.Context, token, id string, input apiclient.CatalogItemInput) (apiclient.CatalogItem, error) {
+	stub.catalogToken, stub.catalogID, stub.catalogInput = token, id, input
+	return stub.catalogItem, stub.catalogError
 }
 
 type sessionStoreStub struct {

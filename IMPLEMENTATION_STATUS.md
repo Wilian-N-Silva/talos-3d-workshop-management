@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: 6c19f41
-last_reconciled_at_utc: 2026-09-04T03:18:28Z
+last_reconciled_commit: c7abe0c
+last_reconciled_at_utc: 2026-09-04T03:36:46Z
 reconciled_by: Codex
 ```
 
@@ -69,6 +69,9 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | FILE-001 | verified_complete | migration `00008_files` + immutable file domain metadata + PostgreSQL repository tests | 27b64cb | UUID, unique SHA-256, safe storage key, original name, content type, size, uploader, and UTC creation time are persisted. |
 | FILE-002 | verified_complete | bounded multipart route + immutable upload service/repository + SHA-256 dedup/cleanup tests | e3e9947 | `files.upload` is enforced; only newly published unreferenced objects are removed during compensation. |
 | FILE-003 | verified_complete | permission-protected file-by-ID route + repository/storage streaming + 404/403/header tests | e3e9947 | `files.read` is enforced; downloads use safe attachment disposition and server-controlled object keys. |
+| CAT-001 | verified_complete | migration `00009_catalog_items` + catalog domain/service + PostgreSQL repository integration test | a071f31 | Purpose/status checks, optional SKU, sellable flag, UTC timestamps, and normalized JSONB tags are persisted. |
+| CAT-002 | verified_complete | permission-protected catalog CRUD routes + validation/pagination/filter tests | a071f31 | Reads require `catalog.read`; mutations require `catalog.write`; bounded list filters use parameterized SQL. |
+| CAT-003 | verified_complete | native catalog API client/Wails methods + permission-aware React list/detail/editor + production Wails build | fad96b7 | Purpose/status are visible; create/edit affordances require `catalog.write`; bearer credentials remain native-only. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -90,12 +93,12 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-FILE-01
-title: Authorized Immutable File Transfer
-tasks: [FILE-002, FILE-003]
-branch: work/wp-file-01-authorized-transfer
-state: in_review
-pull_request: 30
+id: WP-CAT-01
+title: Catalog Items Vertical Slice
+tasks: [CAT-001, CAT-002, CAT-003]
+branch: work/wp-cat-01-catalog-items
+state: ready_for_pr
+pull_request: null
 ```
 
 Recommended `state` values:
@@ -115,6 +118,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-FILE-01 | FILE-002, FILE-003 | c7abe0c (PR #30) | Authorized immutable upload and download through server-controlled storage. |
 | WP-DESK-03 | DESK-005, DESK-006, DESK-007 | 6c19f41 (PR #29) | Permission-aware navigation, fixed theme policy, and workshop branding. |
 | WP-DESK-02 | DESK-003, DESK-004 | df61891 (PR #28) | Native login and Windows Credential Manager session persistence. |
 | WP-DESK-01 | DESK-001, DESK-002 | 01dc256 (PR #27) | Native server connection configuration and version-compatible API client. |

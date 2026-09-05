@@ -67,6 +67,14 @@ preference overrides the workshop default and is stored in WebView local storage
 `system` follows the Windows color-scheme preference. No custom theme inputs are
 supported.
 
+## Catalog workspace
+
+Authenticated users with `catalog.read` see the catalog list and item details,
+including purpose and active/archived status. Create and edit controls appear
+only with `catalog.write`; the server independently enforces the same permission.
+All catalog HTTP requests and bearer credentials remain inside native Go. The
+initial desktop list is bounded to 100 items and reports the server total.
+
 ## Production build
 
 From this directory:

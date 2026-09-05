@@ -107,6 +107,172 @@
     color: var(--text-muted);
 }
 
+.catalog-workspace {
+    margin: 28px auto 0;
+    max-width: 1180px;
+    text-align: left;
+}
+
+.catalog-workspace__toolbar,
+.catalog-detail__heading {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+.catalog-workspace__toolbar h1,
+.catalog-detail h2,
+.catalog-form h2 {
+    margin: 0;
+}
+
+.catalog-workspace__toolbar > div > p:last-child,
+.catalog-workspace__loading,
+.catalog-detail > p,
+.catalog-list > p {
+    color: var(--text-muted);
+}
+
+.catalog-layout {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.5fr);
+    margin-top: 22px;
+}
+
+.catalog-list,
+.catalog-detail {
+    background: var(--surface);
+    border: 1px solid rgba(173, 205, 231, 0.18);
+    border-radius: 14px;
+    box-sizing: border-box;
+    min-height: 420px;
+    padding: 16px;
+}
+
+.catalog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.catalog-list__item {
+    background: var(--surface-subtle);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    font: inherit;
+    gap: 4px;
+    padding: 13px;
+    text-align: left;
+}
+
+.catalog-list__item span,
+.catalog-list__item small,
+.catalog-detail dt {
+    color: var(--text-muted);
+}
+
+.catalog-list__item--selected {
+    border-color: var(--accent);
+}
+
+.catalog-detail {
+    padding: 24px;
+}
+
+.catalog-status,
+.catalog-tags span {
+    background: var(--surface-subtle);
+    border-radius: 999px;
+    color: var(--text-muted);
+    display: inline-block;
+    font-size: 0.76rem;
+    padding: 5px 9px;
+}
+
+.catalog-detail__heading h2 {
+    margin-top: 8px;
+}
+
+.catalog-detail__facts {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 26px 0;
+}
+
+.catalog-detail__facts div {
+    background: var(--surface-subtle);
+    border-radius: 9px;
+    padding: 12px;
+}
+
+.catalog-detail dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.catalog-detail dd {
+    margin: 5px 0 0;
+}
+
+.catalog-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 24px;
+}
+
+.catalog-form {
+    display: grid;
+    gap: 16px;
+}
+
+.catalog-form label {
+    display: grid;
+    font-size: 0.86rem;
+    font-weight: 700;
+    gap: 7px;
+}
+
+.catalog-form input,
+.catalog-form textarea,
+.catalog-form select {
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    box-sizing: border-box;
+    color: var(--text);
+    font: inherit;
+    padding: 10px 11px;
+    width: 100%;
+}
+
+.catalog-form textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.catalog-form__row {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.catalog-form .catalog-form__checkbox {
+    align-items: center;
+    display: flex;
+    gap: 9px;
+}
+
+.catalog-form__checkbox input {
+    width: auto;
+}
+
 .brand {
     align-items: center;
     display: flex;
@@ -277,5 +443,11 @@
     .app-shell__account {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .catalog-layout,
+    .catalog-detail__facts,
+    .catalog-form__row {
+        grid-template-columns: 1fr;
     }
 }

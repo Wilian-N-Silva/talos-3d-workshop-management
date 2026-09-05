@@ -13,6 +13,7 @@ import (
 	"time"
 
 	applicationauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/auth"
+	applicationcatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/catalog"
 	applicationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/files"
 	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
@@ -102,6 +103,11 @@ func main() {
 		logger.Printf("server startup failed: initialize file transfer service: %v", err)
 		os.Exit(1)
 	}
+	catalogItemService, err := applicationcatalog.NewService(postgres.NewCatalogItemRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize catalog item service: %v", err)
+		os.Exit(1)
+	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
 	if serverConfig.UploadMaxBytes < maximumLogoBytes {
 		maximumLogoBytes = serverConfig.UploadMaxBytes
@@ -186,6 +192,7 @@ func main() {
 		maximumLogoBytes,
 		fileTransferService,
 		serverConfig.UploadMaxBytes,
+		catalogItemService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -205,6 +212,7 @@ func newHandler(
 	maximumLogoBytes int64,
 	files httpplatform.FileTransferService,
 	maximumFileBytes int64,
+	catalogItems httpplatform.CatalogItemService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -217,6 +225,7 @@ func newHandler(
 	httpplatform.RegisterWorkshopSettings(apiRouter, authentication, settings)
 	httpplatform.RegisterWorkshopLogo(apiRouter, authentication, logo, maximumLogoBytes)
 	httpplatform.RegisterFiles(apiRouter, authentication, files, maximumFileBytes)
+	httpplatform.RegisterCatalogItems(apiRouter, authentication, catalogItems)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux
