@@ -22,13 +22,13 @@ func TestSupplyInventoryRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open()=%v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
+		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
 		_ = database.Close()
 	})
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate()=%v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
 		t.Fatalf("truncate=%v", err)
 	}
 	user, err := NewUserRepository(database).Create(ctx, domainauth.CreateUserParams{Name: "Operator", EmailOrUsername: "supply-operator", PasswordHash: "$argon2id$test", Status: domainauth.UserStatusActive, Role: domainauth.RoleOperator})

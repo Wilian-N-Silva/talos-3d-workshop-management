@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	domainenergy "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/energy"
 	domain "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/jobs"
 )
 
@@ -21,13 +22,13 @@ func TestJobRepositoryNonCommercialLifecycleAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open()=%v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "TRUNCATE TABLE print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
+		_, _ = db.ExecContext(ctx, "TRUNCATE TABLE energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
 		_ = db.Close()
 	})
 	if err := Migrate(ctx, db); err != nil {
 		t.Fatalf("Migrate()=%v", err)
 	}
-	if _, err := db.ExecContext(ctx, "TRUNCATE TABLE print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
+	if _, err := db.ExecContext(ctx, "TRUNCATE TABLE energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
 		t.Fatalf("truncate=%v", err)
 	}
 	var userID, deviceID, itemID, partID, designID, printerID, materialID, spoolID string
@@ -62,6 +63,16 @@ func TestJobRepositoryNonCommercialLifecycleAgainstPostgreSQL(t *testing.T) {
 	job, err := repo.Create(ctx, values, actor, now)
 	if err != nil || job.OrderItemID != nil || job.Purpose != domain.PurposeInternal {
 		t.Fatalf("Create()=%#v,%v", job, err)
+	}
+	energyRepository := NewEnergyRepository(db)
+	startKWh, endKWh, measuredKWh := "120.125", "121.375", "1.25"
+	energyMeasurement, err := energyRepository.Create(ctx, job.ID, userID, domainenergy.Values{Source: domainenergy.SourceManualMeter, MeterStartKWh: &startKWh, MeterEndKWh: &endKWh, MeasuredKWh: &measuredKWh, EnergyRateCentsPerKWh: 95, OccurredAt: now, Notes: "bench meter"})
+	if err != nil || energyMeasurement.MeasuredKWh == nil || *energyMeasurement.MeasuredKWh != "1.25" || energyMeasurement.EnergyRateCentsPerKWh != 95 || energyMeasurement.RecordedBy != userID {
+		t.Fatalf("Create energy measurement=%#v,%v", energyMeasurement, err)
+	}
+	energyMeasurements, err := energyRepository.List(ctx, job.ID)
+	if err != nil || len(energyMeasurements) != 1 || energyMeasurements[0].Source != domainenergy.SourceManualMeter {
+		t.Fatalf("List energy measurements=%#v,%v", energyMeasurements, err)
 	}
 	historicalCost, replacementCost := int64(100), int64(120)
 	modelUsage, err := repo.CreateMaterialUsage(ctx, job.ID, domain.MaterialUsageValues{SpoolID: spoolID, Role: domain.MaterialRoleModel, PlannedGrams: "10.125", MeasurementSource: domain.SourceSlicer, HistoricalMaterialCostCents: &historicalCost, ReplacementMaterialCostCents: &replacementCost}, now)
