@@ -202,6 +202,38 @@ export interface LowInventory {
     supplies: Supply[];
 }
 
+export interface CatalogBOMItem {
+    id: string;
+    catalog_item_id: string;
+    supply_id: string;
+    quantity_per_unit: string;
+    waste_percent: string;
+    notes: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CatalogBOMItemInput {
+    supply_id: string;
+    quantity_per_unit: string;
+    waste_percent: string;
+    notes: string;
+}
+
+export interface CatalogBOMPreviewLine extends CatalogBOMItem {
+    supply_name: string;
+    supply_unit: string;
+    replacement_unit_cost_cents: number;
+    effective_quantity_per_unit: string;
+    exact_replacement_cost_cents_per_unit: string;
+}
+
+export interface CatalogBOMPreview {
+    items: CatalogBOMPreviewLine[];
+    exact_total_replacement_cost_cents: string;
+    rounding_applied: boolean;
+}
+
 interface NativeApp {
     GetServerConnection(): Promise<ServerConnection>;
     SaveServerConnection(baseURL: string): Promise<ServerConnection>;
@@ -219,6 +251,10 @@ interface NativeApp {
     ListDesignVersions(partID: string): Promise<DesignVersion[]>;
     CreateDesignVersion(partID: string, input: DesignVersionInput): Promise<DesignVersion>;
     AttachDesignFile(versionID: string, fileID: string, role: DesignFileRole): Promise<DesignFile>;
+    GetCatalogBOM(itemID: string): Promise<CatalogBOMPreview>;
+    CreateCatalogBOMItem(itemID: string, input: CatalogBOMItemInput): Promise<CatalogBOMItem>;
+    UpdateCatalogBOMItem(itemID: string, bomItemID: string, input: CatalogBOMItemInput): Promise<CatalogBOMItem>;
+    DeleteCatalogBOMItem(itemID: string, bomItemID: string): Promise<void>;
     ListMaterials(): Promise<Material[]>;
     ListSpools(): Promise<Spool[]>;
     ListSpoolMeasurements(spoolID: string): Promise<SpoolMeasurement[]>;
@@ -311,6 +347,11 @@ export async function createDesignVersion(partID: string, input: DesignVersionIn
 export async function attachDesignFile(versionID: string, fileID: string, role: DesignFileRole): Promise<DesignFile> {
     return app().AttachDesignFile(versionID, fileID, role);
 }
+
+export async function getCatalogBOM(itemID: string): Promise<CatalogBOMPreview> { return app().GetCatalogBOM(itemID); }
+export async function createCatalogBOMItem(itemID: string, input: CatalogBOMItemInput): Promise<CatalogBOMItem> { return app().CreateCatalogBOMItem(itemID, input); }
+export async function updateCatalogBOMItem(itemID: string, bomItemID: string, input: CatalogBOMItemInput): Promise<CatalogBOMItem> { return app().UpdateCatalogBOMItem(itemID, bomItemID, input); }
+export async function deleteCatalogBOMItem(itemID: string, bomItemID: string): Promise<void> { return app().DeleteCatalogBOMItem(itemID, bomItemID); }
 
 export async function listMaterials(): Promise<Material[]> { return app().ListMaterials(); }
 export async function listSpools(): Promise<Spool[]> { return app().ListSpools(); }

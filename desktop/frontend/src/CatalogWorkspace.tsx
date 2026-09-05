@@ -5,6 +5,9 @@ import {
     CatalogPurpose,
     CatalogStatus,
     CatalogPart,
+    CatalogBOMItemInput,
+    CatalogBOMPreview,
+    Supply,
     DesignFileRole,
     DesignOrigin,
     DesignVersion,
@@ -12,11 +15,16 @@ import {
     attachDesignFile,
     createCatalogPart,
     createCatalogItem,
+    createCatalogBOMItem,
+    deleteCatalogBOMItem,
+    getCatalogBOM,
     createDesignVersion,
     listCatalogParts,
     listCatalogItems,
     listDesignVersions,
+    listSupplies,
     updateCatalogItem,
+    updateCatalogBOMItem,
 } from './native';
 
 const purposeLabels: Record<CatalogPurpose, string> = {
@@ -187,6 +195,7 @@ export function CatalogWorkspace({canWrite}: {canWrite: boolean}) {
                                 </dl>
                                 <p>{selected.description || 'Sem descrição.'}</p>
                                 <div className="catalog-tags">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+                                <SupplyBOM key={`bom-${selected.id}`} item={selected} canWrite={canWrite} onError={setFeedback} />
                                 <DesignHistory key={selected.id} item={selected} canWrite={canWrite} onError={setFeedback} />
                             </>
                         ) : <p>Selecione um item ou crie o primeiro cadastro.</p>}
@@ -195,6 +204,78 @@ export function CatalogWorkspace({canWrite}: {canWrite: boolean}) {
             )}
         </section>
     );
+}
+
+const emptyBOMInput: CatalogBOMItemInput = {supply_id: '', quantity_per_unit: '1', waste_percent: '0', notes: ''};
+
+function SupplyBOM({item, canWrite, onError}: {item: CatalogItem; canWrite: boolean; onError: (message: string | null) => void}) {
+    const [preview, setPreview] = useState<CatalogBOMPreview | null>(null);
+    const [supplies, setSupplies] = useState<Supply[]>([]);
+    const [draft, setDraft] = useState<CatalogBOMItemInput>(emptyBOMInput);
+    const [editingID, setEditingID] = useState<string | null>(null);
+    const [busy, setBusy] = useState(false);
+
+    async function reload() {
+        setPreview(await getCatalogBOM(item.id));
+    }
+
+    useEffect(() => {
+        let active = true;
+        void getCatalogBOM(item.id)
+            .then((value) => active && setPreview(value))
+            .catch((error: unknown) => active && onError(messageFrom(error)));
+        if (canWrite) {
+            void listSupplies().then((values) => active && setSupplies(values)).catch(() => undefined);
+        }
+        return () => { active = false; };
+    }, [item.id, canWrite, onError]);
+
+    async function save(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault(); setBusy(true); onError(null);
+        try {
+            if (editingID) await updateCatalogBOMItem(item.id, editingID, draft);
+            else await createCatalogBOMItem(item.id, draft);
+            await reload();
+            setDraft(emptyBOMInput); setEditingID(null);
+        } catch (error: unknown) { onError(messageFrom(error)); } finally { setBusy(false); }
+    }
+
+    async function remove(id: string) {
+        setBusy(true); onError(null);
+        try {
+            await deleteCatalogBOMItem(item.id, id);
+            await reload();
+            if (editingID === id) { setEditingID(null); setDraft(emptyBOMInput); }
+        } catch (error: unknown) { onError(messageFrom(error)); } finally { setBusy(false); }
+    }
+
+    return <section className="supply-bom" aria-labelledby="supply-bom-title">
+        <div className="design-history__heading"><div><h3 id="supply-bom-title">Insumos por unidade</h3><p>Quantidades e perdas previstas para produzir uma unidade deste item.</p></div></div>
+        {!preview && <p>Carregando insumos…</p>}
+        {preview && preview.items.length === 0 && <p>Nenhum insumo vinculado.</p>}
+        {preview && preview.items.length > 0 && <div className="supply-bom__table">
+            {preview.items.map((line) => <article key={line.id} className="supply-bom__line">
+                <div><strong>{line.supply_name}</strong><span>{line.quantity_per_unit} {line.supply_unit} + {line.waste_percent}% de perda</span></div>
+                <div><span>{line.effective_quantity_per_unit} {line.supply_unit} efetivos</span><strong>{line.exact_replacement_cost_cents_per_unit} centavos</strong></div>
+                {canWrite && <div className="supply-bom__actions">
+                    <button className="button button--secondary" type="button" disabled={busy} onClick={() => { setEditingID(line.id); setDraft({supply_id: line.supply_id, quantity_per_unit: line.quantity_per_unit, waste_percent: line.waste_percent, notes: line.notes}); }}>Editar</button>
+                    <button className="button button--secondary" type="button" disabled={busy} onClick={() => void remove(line.id)}>Remover</button>
+                </div>}
+            </article>)}
+            <p className="supply-bom__total"><strong>Total exato:</strong> {preview.exact_total_replacement_cost_cents} centavos <small>(sem arredondamento)</small></p>
+        </div>}
+        {canWrite && <form className="design-inline-form supply-bom__form" onSubmit={save}>
+            <label>Insumo
+                <input required list={`supply-options-${item.id}`} value={draft.supply_id} disabled={busy} placeholder="ID do insumo" onChange={(event) => setDraft({...draft, supply_id: event.target.value})} />
+                <datalist id={`supply-options-${item.id}`}>{supplies.map((supply) => <option key={supply.id} value={supply.id}>{supply.name} ({supply.unit})</option>)}</datalist>
+            </label>
+            <label>Quantidade por unidade<input required type="number" min="0.000001" step="0.000001" value={draft.quantity_per_unit} disabled={busy} onChange={(event) => setDraft({...draft, quantity_per_unit: event.target.value})} /></label>
+            <label>Perda (%)<input required type="number" min="0" step="0.0001" value={draft.waste_percent} disabled={busy} onChange={(event) => setDraft({...draft, waste_percent: event.target.value})} /></label>
+            <label>Notas<input maxLength={10000} value={draft.notes} disabled={busy} onChange={(event) => setDraft({...draft, notes: event.target.value})} /></label>
+            <button className="button button--primary" disabled={busy} type="submit">{editingID ? 'Salvar insumo' : 'Adicionar insumo'}</button>
+            {editingID && <button className="button button--secondary" disabled={busy} type="button" onClick={() => { setEditingID(null); setDraft(emptyBOMInput); }}>Cancelar</button>}
+        </form>}
+    </section>;
 }
 
 const originLabels: Record<DesignOrigin, string> = {

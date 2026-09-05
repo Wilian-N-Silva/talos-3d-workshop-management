@@ -83,6 +83,9 @@ func (repository *SupplyInventoryRepository) DeleteSupply(ctx context.Context, i
 	if fkError(err, "supply_movements_supply_fk") {
 		return domain.ErrSupplyHistoryExists
 	}
+	if fkError(err, "catalog_bom_supply_fk") {
+		return domain.ErrSupplyInUse
+	}
 	if err != nil {
 		return fmt.Errorf("delete supply: %w", err)
 	}

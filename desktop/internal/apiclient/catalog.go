@@ -133,6 +133,9 @@ func (client *Client) catalogJSON(ctx context.Context, method, path, token strin
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		return mapAPIError(response.StatusCode, responseBody)
 	}
+	if output == nil {
+		return nil
+	}
 	if err := json.Unmarshal(responseBody, output); err != nil {
 		return invalidResponseError("Server returned invalid catalog data", err)
 	}

@@ -50,6 +50,7 @@ func TestUserRoleMigrationBackfillsExistingUsersAgainstPostgreSQL(t *testing.T) 
 	})
 
 	for _, statement := range []string{
+		"DROP TABLE IF EXISTS catalog_bom_items",
 		"DROP TABLE IF EXISTS supply_movements",
 		"DROP TABLE IF EXISTS supplies",
 		"DROP TABLE IF EXISTS spool_measurements",
@@ -146,6 +147,9 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 		}
 	})
 
+	if _, err := database.ExecContext(ctx, "DROP TABLE IF EXISTS catalog_bom_items"); err != nil {
+		t.Fatalf("reset catalog BOM schema: %v", err)
+	}
 	if _, err := database.ExecContext(ctx, "DROP TABLE IF EXISTS supply_movements"); err != nil {
 		t.Fatalf("reset supply movements schema: %v", err)
 	}
@@ -199,14 +203,14 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetMigrationState() before migrate error = %v", err)
 	}
-	if state.CurrentVersion != 0 || state.TargetVersion != 12 || !state.HasPending {
-		t.Fatalf("state before migrate = %+v, want current 0, target 12, pending", state)
+	if state.CurrentVersion != 0 || state.TargetVersion != 13 || !state.HasPending {
+		t.Fatalf("state before migrate = %+v, want current 0, target 13, pending", state)
 	}
 
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	assertMigrationState(t, ctx, database, 12, 12, false)
+	assertMigrationState(t, ctx, database, 13, 13, false)
 
 	results := make(chan error, 2)
 	for range 2 {
@@ -268,6 +272,10 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read supply inventory migration: %v", err)
 	}
+	catalogBOM, err := fs.ReadFile(migrationfiles.Files, "00013_catalog_bom.sql")
+	if err != nil {
+		t.Fatalf("read catalog BOM migration: %v", err)
+	}
 	failingMigrations := fstest.MapFS{
 		"00001_bootstrap.sql":          {Data: bootstrap},
 		"00002_users.sql":              {Data: users},
@@ -281,14 +289,15 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 		"00010_catalog_designs.sql":    {Data: catalogDesigns},
 		"00011_filament_inventory.sql": {Data: filamentInventory},
 		"00012_supply_inventory.sql":   {Data: supplyInventory},
-		"00013_failure.sql": {
+		"00013_catalog_bom.sql":        {Data: catalogBOM},
+		"00014_failure.sql": {
 			Data: []byte("-- +goose Up\nSELECT * FROM table_that_does_not_exist;\n"),
 		},
 	}
 	if err := migrate(ctx, database, failingMigrations); err == nil {
 		t.Fatal("migrate() error = nil, want failing migration error")
 	}
-	assertMigrationState(t, ctx, database, 12, 12, false)
+	assertMigrationState(t, ctx, database, 13, 13, false)
 }
 
 func assertMigrationState(t *testing.T, ctx context.Context, database *sql.DB, current, target int64, pending bool) {

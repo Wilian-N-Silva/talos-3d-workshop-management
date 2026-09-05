@@ -34,6 +34,10 @@ type remoteClient interface {
 	ListDesignVersions(context.Context, string, string) ([]apiclient.DesignVersion, error)
 	CreateDesignVersion(context.Context, string, string, apiclient.DesignVersionInput) (apiclient.DesignVersion, error)
 	AttachDesignFile(context.Context, string, string, string, string) (apiclient.DesignFile, error)
+	GetCatalogBOM(context.Context, string, string) (apiclient.CatalogBOMPreview, error)
+	CreateCatalogBOMItem(context.Context, string, string, apiclient.CatalogBOMInput) (apiclient.CatalogBOMItem, error)
+	UpdateCatalogBOMItem(context.Context, string, string, string, apiclient.CatalogBOMInput) (apiclient.CatalogBOMItem, error)
+	DeleteCatalogBOMItem(context.Context, string, string, string) error
 	ListMaterials(context.Context, string) ([]apiclient.Material, error)
 	ListSpools(context.Context, string) ([]apiclient.Spool, error)
 	ListSpoolMeasurements(context.Context, string, string) ([]apiclient.SpoolMeasurement, error)
@@ -345,6 +349,53 @@ func (a *App) AttachDesignFile(versionID, fileID, role string) (apiclient.Design
 		return apiclient.DesignFile{}, a.handleAuthenticatedError(baseURL, err)
 	}
 	return file, nil
+}
+
+func (a *App) GetCatalogBOM(itemID string) (apiclient.CatalogBOMPreview, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.CatalogBOMPreview{}, err
+	}
+	preview, err := client.GetCatalogBOM(a.applicationContext(), session.Token, itemID)
+	if err != nil {
+		return apiclient.CatalogBOMPreview{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return preview, nil
+}
+
+func (a *App) CreateCatalogBOMItem(itemID string, input apiclient.CatalogBOMInput) (apiclient.CatalogBOMItem, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.CatalogBOMItem{}, err
+	}
+	item, err := client.CreateCatalogBOMItem(a.applicationContext(), session.Token, itemID, input)
+	if err != nil {
+		return apiclient.CatalogBOMItem{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return item, nil
+}
+
+func (a *App) UpdateCatalogBOMItem(itemID, bomItemID string, input apiclient.CatalogBOMInput) (apiclient.CatalogBOMItem, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.CatalogBOMItem{}, err
+	}
+	item, err := client.UpdateCatalogBOMItem(a.applicationContext(), session.Token, itemID, bomItemID, input)
+	if err != nil {
+		return apiclient.CatalogBOMItem{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return item, nil
+}
+
+func (a *App) DeleteCatalogBOMItem(itemID, bomItemID string) error {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return err
+	}
+	if err := client.DeleteCatalogBOMItem(a.applicationContext(), session.Token, itemID, bomItemID); err != nil {
+		return a.handleAuthenticatedError(baseURL, err)
+	}
+	return nil
 }
 
 func (a *App) ListMaterials() ([]apiclient.Material, error) {

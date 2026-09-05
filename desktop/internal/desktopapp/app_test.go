@@ -174,6 +174,19 @@ func TestCatalogOperationsKeepBearerTokenInNativeLayer(t *testing.T) {
 	if _, err := app.AttachDesignFile("version-id", "file-id", "print"); err != nil || remote.designVersionID != "version-id" || remote.designFileID != "file-id" {
 		t.Fatalf("AttachDesignFile() error = %v, version/file = %q/%q", err, remote.designVersionID, remote.designFileID)
 	}
+	if _, err := app.GetCatalogBOM("item-id"); err != nil || remote.bomCatalogID != "item-id" {
+		t.Fatalf("GetCatalogBOM() error = %v, catalog = %q", err, remote.bomCatalogID)
+	}
+	bomInput := apiclient.CatalogBOMInput{SupplyID: "supply-id", QuantityPerUnit: "2", WastePercent: "5"}
+	if _, err := app.CreateCatalogBOMItem("item-id", bomInput); err != nil || remote.bomInput.SupplyID != "supply-id" {
+		t.Fatalf("CreateCatalogBOMItem() error = %v, input = %#v", err, remote.bomInput)
+	}
+	if _, err := app.UpdateCatalogBOMItem("item-id", "bom-id", bomInput); err != nil || remote.bomItemID != "bom-id" {
+		t.Fatalf("UpdateCatalogBOMItem() error = %v, item = %q", err, remote.bomItemID)
+	}
+	if err := app.DeleteCatalogBOMItem("item-id", "bom-id"); err != nil || remote.bomItemID != "bom-id" {
+		t.Fatalf("DeleteCatalogBOMItem() error = %v, item = %q", err, remote.bomItemID)
+	}
 }
 
 func TestCatalogUnauthorizedClearsRejectedSession(t *testing.T) {
@@ -272,6 +285,10 @@ type connectionCheckerStub struct {
 	supplyInput       apiclient.SupplyInput
 	inventorySupplyID string
 	lowThreshold      string
+	bom               apiclient.CatalogBOMPreview
+	bomCatalogID      string
+	bomItemID         string
+	bomInput          apiclient.CatalogBOMInput
 }
 
 func (stub *connectionCheckerStub) Login(_ context.Context, input apiclient.LoginInput) (apiclient.LoginResult, error) {
@@ -322,6 +339,22 @@ func (stub *connectionCheckerStub) CreateDesignVersion(_ context.Context, token,
 func (stub *connectionCheckerStub) AttachDesignFile(_ context.Context, token, versionID, fileID, _ string) (apiclient.DesignFile, error) {
 	stub.designToken, stub.designVersionID, stub.designFileID = token, versionID, fileID
 	return stub.designFile, stub.catalogError
+}
+func (stub *connectionCheckerStub) GetCatalogBOM(_ context.Context, token, itemID string) (apiclient.CatalogBOMPreview, error) {
+	stub.catalogToken, stub.bomCatalogID = token, itemID
+	return stub.bom, stub.catalogError
+}
+func (stub *connectionCheckerStub) CreateCatalogBOMItem(_ context.Context, token, itemID string, input apiclient.CatalogBOMInput) (apiclient.CatalogBOMItem, error) {
+	stub.catalogToken, stub.bomCatalogID, stub.bomInput = token, itemID, input
+	return apiclient.CatalogBOMItem{SupplyID: input.SupplyID}, stub.catalogError
+}
+func (stub *connectionCheckerStub) UpdateCatalogBOMItem(_ context.Context, token, itemID, bomItemID string, input apiclient.CatalogBOMInput) (apiclient.CatalogBOMItem, error) {
+	stub.catalogToken, stub.bomCatalogID, stub.bomItemID, stub.bomInput = token, itemID, bomItemID, input
+	return apiclient.CatalogBOMItem{ID: bomItemID}, stub.catalogError
+}
+func (stub *connectionCheckerStub) DeleteCatalogBOMItem(_ context.Context, token, itemID, bomItemID string) error {
+	stub.catalogToken, stub.bomCatalogID, stub.bomItemID = token, itemID, bomItemID
+	return stub.catalogError
 }
 
 func (stub *connectionCheckerStub) ListMaterials(_ context.Context, token string) ([]apiclient.Material, error) {

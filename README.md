@@ -148,6 +148,10 @@ Catalog items use `/api/v1/catalog/items`. Read operations require
 The list endpoint supports `purpose`, `status`, `sellable`, `tag`, and `q`
 filters with bounded `limit`/`offset` pagination. Tags are normalized lowercase
 strings stored as a JSONB array, and items can be archived without deletion.
+Catalog supply BOM entries use `/api/v1/catalog/items/{itemID}/bom`, with
+`catalog.read` for exact replacement-cost previews and `catalog.write` for
+CRUD. Preview quantities and cents are exact decimal strings and are not
+rounded or persisted as an official price.
 
 The Windows desktop starts with an editable server connection screen. It
 persists only a credential-free HTTP(S) base URL in the current user's config
