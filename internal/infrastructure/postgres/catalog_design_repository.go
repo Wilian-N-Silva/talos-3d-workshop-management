@@ -274,5 +274,5 @@ func constraintViolation(err error, constraint string) bool {
 
 func foreignKeyViolation(err error, constraint string) bool {
 	var pgError *pgconn.PgError
-	return errors.As(err, &pgError) && pgError.Code == "23503" && pgError.ConstraintName == constraint
+	return errors.As(err, &pgError) && (pgError.Code == "23503" || pgError.Code == "23001") && pgError.ConstraintName == constraint
 }
