@@ -18,6 +18,7 @@ import (
 	applicationfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/files"
 	applicationinventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/inventory"
 	applicationjobs "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/jobs"
+	applicationlabor "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/labor"
 	applicationprinters "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/printers"
 	applicationsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/settings"
 	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/buildinfo"
@@ -153,6 +154,11 @@ func main() {
 		logger.Printf("server startup failed: initialize energy service: %v", err)
 		os.Exit(1)
 	}
+	laborService, err := applicationlabor.NewService(postgres.NewLaborRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize labor service: %v", err)
+		os.Exit(1)
+	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
 	if serverConfig.UploadMaxBytes < maximumLogoBytes {
 		maximumLogoBytes = serverConfig.UploadMaxBytes
@@ -246,6 +252,7 @@ func main() {
 		jobService,
 		jobMaterialUsageService,
 		energyService,
+		laborService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -274,6 +281,7 @@ func newHandler(
 	jobs httpplatform.JobService,
 	jobMaterialUsage httpplatform.JobMaterialUsageService,
 	energy httpplatform.EnergyService,
+	labor httpplatform.LaborService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -295,6 +303,7 @@ func newHandler(
 	httpplatform.RegisterJobs(apiRouter, authentication, jobs)
 	httpplatform.RegisterJobMaterialUsage(apiRouter, authentication, jobMaterialUsage)
 	httpplatform.RegisterEnergy(apiRouter, authentication, energy)
+	httpplatform.RegisterLabor(apiRouter, authentication, labor)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux

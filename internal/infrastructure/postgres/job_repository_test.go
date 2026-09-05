@@ -9,6 +9,7 @@ import (
 
 	domainenergy "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/energy"
 	domain "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/jobs"
+	domainlabor "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/labor"
 )
 
 func TestJobRepositoryNonCommercialLifecycleAgainstPostgreSQL(t *testing.T) {
@@ -22,13 +23,13 @@ func TestJobRepositoryNonCommercialLifecycleAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open()=%v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = db.ExecContext(ctx, "TRUNCATE TABLE energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
+		_, _ = db.ExecContext(ctx, "TRUNCATE TABLE job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices")
 		_ = db.Close()
 	})
 	if err := Migrate(ctx, db); err != nil {
 		t.Fatalf("Migrate()=%v", err)
 	}
-	if _, err := db.ExecContext(ctx, "TRUNCATE TABLE energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
+	if _, err := db.ExecContext(ctx, "TRUNCATE TABLE job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, catalog_bom_items, supply_movements, supplies, spool_measurements, material_spools, materials, design_version_files, design_versions, catalog_parts, catalog_items, printers, workshop_settings, files, sessions, bootstrap_state, users, client_devices"); err != nil {
 		t.Fatalf("truncate=%v", err)
 	}
 	var userID, deviceID, itemID, partID, designID, printerID, materialID, spoolID string
@@ -73,6 +74,23 @@ func TestJobRepositoryNonCommercialLifecycleAgainstPostgreSQL(t *testing.T) {
 	energyMeasurements, err := energyRepository.List(ctx, job.ID)
 	if err != nil || len(energyMeasurements) != 1 || energyMeasurements[0].Source != domainenergy.SourceManualMeter {
 		t.Fatalf("List energy measurements=%#v,%v", energyMeasurements, err)
+	}
+	laborRepository := NewLaborRepository(db)
+	laborRate, err := laborRepository.CreateRate(ctx, domainlabor.RateValues{Name: "Internal setup", ActivityType: domainlabor.ActivitySetup, CostHourlyRateCents: 6000, Active: true}, now)
+	if err != nil || laborRate.CostHourlyRateCents != 6000 {
+		t.Fatalf("Create labor rate=%#v,%v", laborRate, err)
+	}
+	laborEntry, err := laborRepository.CreateEntry(ctx, job.ID, userID, domainlabor.EntryValues{LaborRateID: laborRate.ID, Minutes: 15, OccurredAt: now, Notes: "fixture setup"}, now)
+	if err != nil || laborEntry.ActivityType != domainlabor.ActivitySetup || laborEntry.InternalHourlyRateCents != 6000 || laborEntry.RecordedBy != userID {
+		t.Fatalf("Create labor entry=%#v,%v", laborEntry, err)
+	}
+	laborRate, err = laborRepository.UpdateRate(ctx, laborRate.ID, domainlabor.RateValues{Name: "Internal setup", ActivityType: domainlabor.ActivitySetup, CostHourlyRateCents: 9000, Active: true}, now.Add(time.Second))
+	if err != nil || laborRate.CostHourlyRateCents != 9000 {
+		t.Fatalf("Update labor rate=%#v,%v", laborRate, err)
+	}
+	laborEntries, err := laborRepository.ListEntries(ctx, job.ID)
+	if err != nil || len(laborEntries) != 1 || laborEntries[0].InternalHourlyRateCents != 6000 {
+		t.Fatalf("List labor entries=%#v,%v", laborEntries, err)
 	}
 	historicalCost, replacementCost := int64(100), int64(120)
 	modelUsage, err := repo.CreateMaterialUsage(ctx, job.ID, domain.MaterialUsageValues{SpoolID: spoolID, Role: domain.MaterialRoleModel, PlannedGrams: "10.125", MeasurementSource: domain.SourceSlicer, HistoricalMaterialCostCents: &historicalCost, ReplacementMaterialCostCents: &replacementCost}, now)

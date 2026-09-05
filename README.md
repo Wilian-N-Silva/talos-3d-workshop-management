@@ -173,6 +173,11 @@ Meter, direct-measurement, imported, and estimated sources retain exact values,
 the authenticated recorder, occurrence time, and the tariff snapshot used at
 entry time. Estimation does not hide a utilization factor or calculate cost at
 this stage.
+Internal labor cost rates use `/api/v1/costing/labor-rates`; they contain no
+billable/customer price fields and mutations require `costing.manage`.
+Immutable Job time entries use `/api/v1/jobs/{jobID}/labor`, snapshot the
+selected active rate and activity, support non-commercial Jobs, and expose
+total minutes without prematurely performing the later labor-cost calculation.
 
 The Windows desktop starts with an editable server connection screen. It
 persists only a credential-free HTTP(S) base URL in the current user's config
