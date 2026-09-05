@@ -148,6 +148,60 @@ export interface SpoolMeasurement {
 
 export interface MeasurementInput {measured_at: string; gross_weight_g: string; source: 'manual' | 'imported' | 'other'; notes: string;}
 
+export interface Supply {
+    id: string;
+    name: string;
+    sku?: string | null;
+    unit: string;
+    current_quantity: string;
+    replacement_unit_cost_cents: number;
+    minimum_quantity: string;
+    notes: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SupplyInput {
+    name: string;
+    sku?: string | null;
+    unit: string;
+    replacement_unit_cost_cents: number;
+    minimum_quantity: string;
+    notes: string;
+}
+
+export type SupplyMovementType = 'purchase' | 'consume' | 'adjustment' | 'return' | 'discard';
+
+export interface SupplyMovement {
+    id: string;
+    supply_id: string;
+    type: SupplyMovementType;
+    quantity: string;
+    unit_cost_cents?: number | null;
+    reference_type?: string | null;
+    reference_id?: string | null;
+    occurred_at: string;
+    recorded_by: string;
+    notes: string;
+    created_at: string;
+}
+
+export interface SupplyMovementInput {
+    type: SupplyMovementType;
+    quantity: string;
+    unit_cost_cents?: number | null;
+    reference_type?: string | null;
+    reference_id?: string | null;
+    occurred_at: string;
+    notes: string;
+}
+
+export interface LowInventory {
+    spool_threshold_g: string;
+    spools: Spool[];
+    supplies: Supply[];
+}
+
 interface NativeApp {
     GetServerConnection(): Promise<ServerConnection>;
     SaveServerConnection(baseURL: string): Promise<ServerConnection>;
@@ -169,6 +223,11 @@ interface NativeApp {
     ListSpools(): Promise<Spool[]>;
     ListSpoolMeasurements(spoolID: string): Promise<SpoolMeasurement[]>;
     RecordSpoolMeasurement(spoolID: string, input: MeasurementInput): Promise<SpoolMeasurement>;
+    ListSupplies(): Promise<Supply[]>;
+    CreateSupply(input: SupplyInput): Promise<Supply>;
+    ListSupplyMovements(supplyID: string): Promise<SupplyMovement[]>;
+    RecordSupplyMovement(supplyID: string, input: SupplyMovementInput): Promise<SupplyMovement>;
+    ListLowInventory(spoolThresholdG: string): Promise<LowInventory>;
 }
 
 declare global {
@@ -257,3 +316,8 @@ export async function listMaterials(): Promise<Material[]> { return app().ListMa
 export async function listSpools(): Promise<Spool[]> { return app().ListSpools(); }
 export async function listSpoolMeasurements(spoolID: string): Promise<SpoolMeasurement[]> { return app().ListSpoolMeasurements(spoolID); }
 export async function recordSpoolMeasurement(spoolID: string, input: MeasurementInput): Promise<SpoolMeasurement> { return app().RecordSpoolMeasurement(spoolID, input); }
+export async function listSupplies(): Promise<Supply[]> { return app().ListSupplies(); }
+export async function createSupply(input: SupplyInput): Promise<Supply> { return app().CreateSupply(input); }
+export async function listSupplyMovements(supplyID: string): Promise<SupplyMovement[]> { return app().ListSupplyMovements(supplyID); }
+export async function recordSupplyMovement(supplyID: string, input: SupplyMovementInput): Promise<SupplyMovement> { return app().RecordSupplyMovement(supplyID, input); }
+export async function listLowInventory(spoolThresholdG = '100'): Promise<LowInventory> { return app().ListLowInventory(spoolThresholdG); }

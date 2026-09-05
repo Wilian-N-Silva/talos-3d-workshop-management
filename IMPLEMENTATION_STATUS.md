@@ -81,6 +81,9 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | INV-001 | verified_complete | migration `00011_filament_inventory` + material domain/service/repository/routes and tests | 7a8bc99 | Manufacturer, type, color, exact decimal density, replacement cost/kg in cents, and permission-protected CRUD are implemented. |
 | INV-002 | verified_complete | spool schema + validated CRUD repository/routes and native typed client | 7a8bc99 | Human codes are case-insensitively unique; costs, exact weights, lifecycle status, and storage metadata are persisted. |
 | INV-003 | verified_complete | transactional append-only measurement repository/API + desktop history/weighing UI | 7a8bc99 | Remaining weight is derived exactly; only chronologically newest measurements update the current cache. |
+| INV-004 | verified_complete | migration `00012_supply_inventory` + supply domain/service/repository/routes and tests | 6579bdf | Unit, exact current/minimum quantities, optional unique SKU, and replacement unit cost in cents are exposed through permission-protected CRUD. |
+| INV-005 | verified_complete | signed append-only movement service/repository/API + native client/UI history | 6579bdf | All five movement types are validated; row locking atomically updates stock and rejects negative results without history writes. |
+| INV-006 | verified_complete | derived low-inventory query + configurable spool threshold + desktop item list | 6579bdf | Positive supply minimums and active measured spools are queried directly; no alert table or persisted alert state exists. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -102,10 +105,10 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-INV-01
-title: Filament Inventory
-tasks: [INV-001, INV-002, INV-003]
-branch: work/wp-inv-01-filament-inventory
+id: WP-INV-02
+title: Supplies, Stock Movements & Low Inventory
+tasks: [INV-004, INV-005, INV-006]
+branch: work/wp-inv-02-supplies-stock
 state: ready_for_pr
 pull_request: null
 ```
@@ -127,6 +130,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-INV-02 | INV-004, INV-005, INV-006 | 6579bdf (local, unpushed) | Supply CRUD, atomic auditable movements, explicit no-negative-stock policy, and derived low-inventory UI. |
 | WP-INV-01 | INV-001, INV-002, INV-003 | 7a8bc99 (local, unpushed) | Filament materials, physical spools, append-only weighing history, and permission-aware desktop workflow. |
 | WP-CAT-02 | CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009 | 6be2c77 (local, unpushed) | Immutable design history, file roles, provenance/license tracking, and advisory license UI. |
 | WP-CAT-01 | CAT-001, CAT-002, CAT-003 | f447cb5 (local, unpushed) | Catalog item API and permission-aware desktop vertical slice; publication intentionally deferred. |

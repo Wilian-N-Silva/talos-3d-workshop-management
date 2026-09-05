@@ -119,6 +119,11 @@ func main() {
 		logger.Printf("server startup failed: initialize filament inventory service: %v", err)
 		os.Exit(1)
 	}
+	supplyInventoryService, err := applicationinventory.NewSupplyService(postgres.NewSupplyInventoryRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize supply inventory service: %v", err)
+		os.Exit(1)
+	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
 	if serverConfig.UploadMaxBytes < maximumLogoBytes {
 		maximumLogoBytes = serverConfig.UploadMaxBytes
@@ -206,6 +211,7 @@ func main() {
 		catalogItemService,
 		catalogDesignService,
 		filamentInventoryService,
+		supplyInventoryService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -228,6 +234,7 @@ func newHandler(
 	catalogItems httpplatform.CatalogItemService,
 	catalogDesigns httpplatform.CatalogDesignService,
 	filamentInventory httpplatform.FilamentInventoryService,
+	supplyInventory httpplatform.SupplyInventoryService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -243,6 +250,7 @@ func newHandler(
 	httpplatform.RegisterCatalogItems(apiRouter, authentication, catalogItems)
 	httpplatform.RegisterCatalogDesigns(apiRouter, authentication, catalogDesigns)
 	httpplatform.RegisterFilamentInventory(apiRouter, authentication, filamentInventory)
+	httpplatform.RegisterSupplyInventory(apiRouter, authentication, supplyInventory)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux

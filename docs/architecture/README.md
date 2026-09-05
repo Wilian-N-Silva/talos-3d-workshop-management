@@ -9,6 +9,7 @@ Current documents:
 - [Roles and permission authorization](authorization.md)
 - [Immutable file storage contract](file-storage.md)
 - [Filament inventory and weighing history](filament-inventory.md)
+- [Supply inventory and stock movements](supply-inventory.md)
 - [Catalog items](catalog-items.md)
 - [Catalog parts and designs](catalog-designs.md)
 - [Desktop login](login.md)

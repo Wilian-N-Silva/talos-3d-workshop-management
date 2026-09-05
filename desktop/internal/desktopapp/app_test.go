@@ -191,7 +191,7 @@ func TestCatalogUnauthorizedClearsRejectedSession(t *testing.T) {
 }
 
 func TestInventoryOperationsKeepBearerTokenNative(t *testing.T) {
-	remote := &connectionCheckerStub{spools: []apiclient.Spool{{ID: "spool-id"}}}
+	remote := &connectionCheckerStub{spools: []apiclient.Spool{{ID: "spool-id"}}, supplies: []apiclient.Supply{{ID: "supply-id"}}}
 	app := newApp(&connectionStoreStub{loaded: serverconnection.Configuration{ServerBaseURL: "http://workshop.local"}}, &sessionStoreStub{loaded: credentials.Session{Token: "native-inventory-token"}}, "1.2.0", func(string, string) (remoteClient, error) { return remote, nil })
 	if _, err := app.ListSpools(); err != nil || remote.inventoryToken != "native-inventory-token" {
 		t.Fatalf("ListSpools() error=%v token=%q", err, remote.inventoryToken)
@@ -201,6 +201,18 @@ func TestInventoryOperationsKeepBearerTokenNative(t *testing.T) {
 	}
 	if _, err := app.RecordSpoolMeasurement("spool-id", apiclient.MeasurementInput{GrossWeightG: "845.5"}); err != nil || remote.inventorySpoolID != "spool-id" {
 		t.Fatalf("RecordSpoolMeasurement() error=%v spool=%q", err, remote.inventorySpoolID)
+	}
+	if _, err := app.ListSupplies(); err != nil || remote.inventoryToken != "native-inventory-token" {
+		t.Fatalf("ListSupplies() error=%v token=%q", err, remote.inventoryToken)
+	}
+	if _, err := app.CreateSupply(apiclient.SupplyInput{Name: "NFC"}); err != nil || remote.supplyInput.Name != "NFC" {
+		t.Fatalf("CreateSupply() error=%v input=%#v", err, remote.supplyInput)
+	}
+	if _, err := app.RecordSupplyMovement("supply-id", apiclient.SupplyMovementInput{Quantity: "10"}); err != nil || remote.inventorySupplyID != "supply-id" {
+		t.Fatalf("RecordSupplyMovement() error=%v supply=%q", err, remote.inventorySupplyID)
+	}
+	if _, err := app.ListLowInventory("75"); err != nil || remote.lowThreshold != "75" {
+		t.Fatalf("ListLowInventory() error=%v threshold=%q", err, remote.lowThreshold)
 	}
 }
 
@@ -225,37 +237,41 @@ func (stub *connectionStoreStub) Save(value string) (serverconnection.Configurat
 }
 
 type connectionCheckerStub struct {
-	result           apiclient.ConnectionResult
-	err              error
-	loginResult      apiclient.LoginResult
-	loginError       error
-	loginInput       apiclient.LoginInput
-	branding         apiclient.Branding
-	brandingErr      error
-	settings         apiclient.WorkshopSettings
-	settingsError    error
-	settingsToken    string
-	catalogPage      apiclient.CatalogPage
-	catalogItem      apiclient.CatalogItem
-	catalogError     error
-	catalogToken     string
-	catalogInput     apiclient.CatalogItemInput
-	catalogID        string
-	parts            []apiclient.CatalogPart
-	part             apiclient.CatalogPart
-	versions         []apiclient.DesignVersion
-	version          apiclient.DesignVersion
-	designFile       apiclient.DesignFile
-	designToken      string
-	designItemID     string
-	designPartID     string
-	designVersionID  string
-	designFileID     string
-	materials        []apiclient.Material
-	spools           []apiclient.Spool
-	measurements     []apiclient.SpoolMeasurement
-	inventoryToken   string
-	inventorySpoolID string
+	result            apiclient.ConnectionResult
+	err               error
+	loginResult       apiclient.LoginResult
+	loginError        error
+	loginInput        apiclient.LoginInput
+	branding          apiclient.Branding
+	brandingErr       error
+	settings          apiclient.WorkshopSettings
+	settingsError     error
+	settingsToken     string
+	catalogPage       apiclient.CatalogPage
+	catalogItem       apiclient.CatalogItem
+	catalogError      error
+	catalogToken      string
+	catalogInput      apiclient.CatalogItemInput
+	catalogID         string
+	parts             []apiclient.CatalogPart
+	part              apiclient.CatalogPart
+	versions          []apiclient.DesignVersion
+	version           apiclient.DesignVersion
+	designFile        apiclient.DesignFile
+	designToken       string
+	designItemID      string
+	designPartID      string
+	designVersionID   string
+	designFileID      string
+	materials         []apiclient.Material
+	spools            []apiclient.Spool
+	measurements      []apiclient.SpoolMeasurement
+	inventoryToken    string
+	inventorySpoolID  string
+	supplies          []apiclient.Supply
+	supplyInput       apiclient.SupplyInput
+	inventorySupplyID string
+	lowThreshold      string
 }
 
 func (stub *connectionCheckerStub) Login(_ context.Context, input apiclient.LoginInput) (apiclient.LoginResult, error) {
@@ -323,6 +339,26 @@ func (stub *connectionCheckerStub) ListSpoolMeasurements(_ context.Context, toke
 func (stub *connectionCheckerStub) RecordSpoolMeasurement(_ context.Context, token, spoolID string, _ apiclient.MeasurementInput) (apiclient.SpoolMeasurement, error) {
 	stub.inventoryToken, stub.inventorySpoolID = token, spoolID
 	return apiclient.SpoolMeasurement{}, stub.catalogError
+}
+func (stub *connectionCheckerStub) ListSupplies(_ context.Context, token string) ([]apiclient.Supply, error) {
+	stub.inventoryToken = token
+	return stub.supplies, stub.catalogError
+}
+func (stub *connectionCheckerStub) CreateSupply(_ context.Context, token string, input apiclient.SupplyInput) (apiclient.Supply, error) {
+	stub.inventoryToken, stub.supplyInput = token, input
+	return apiclient.Supply{Name: input.Name}, stub.catalogError
+}
+func (stub *connectionCheckerStub) ListSupplyMovements(_ context.Context, token, supplyID string) ([]apiclient.SupplyMovement, error) {
+	stub.inventoryToken, stub.inventorySupplyID = token, supplyID
+	return []apiclient.SupplyMovement{}, stub.catalogError
+}
+func (stub *connectionCheckerStub) RecordSupplyMovement(_ context.Context, token, supplyID string, _ apiclient.SupplyMovementInput) (apiclient.SupplyMovement, error) {
+	stub.inventoryToken, stub.inventorySupplyID = token, supplyID
+	return apiclient.SupplyMovement{}, stub.catalogError
+}
+func (stub *connectionCheckerStub) ListLowInventory(_ context.Context, token, threshold string) (apiclient.LowInventory, error) {
+	stub.inventoryToken, stub.lowThreshold = token, threshold
+	return apiclient.LowInventory{Spools: []apiclient.Spool{}, Supplies: []apiclient.Supply{}}, stub.catalogError
 }
 
 type sessionStoreStub struct {
