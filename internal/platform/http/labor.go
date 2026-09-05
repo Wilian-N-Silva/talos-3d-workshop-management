@@ -8,6 +8,7 @@ import (
 
 	application "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/application/labor"
 	domainauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
+	"github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/costing"
 	domainjobs "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/jobs"
 	domain "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/labor"
 	"github.com/go-chi/chi/v5"
@@ -36,6 +37,29 @@ type laborEntryRequest struct {
 }
 
 func RegisterLabor(router *APIV1Router, authentication BearerAuthenticationService, service LaborService) {
+	registerLaborRoute(router, authentication, domainauth.PermissionCostingRead, http.MethodPost, LaborRatesPath+"/suggestion", func(w http.ResponseWriter, r *http.Request) {
+		// Pointers distinguish explicit zero costs from missing assumptions.
+		var body struct {
+			Compensation *int64 `json:"target_monthly_compensation_cents"`
+			Overhead     *int64 `json:"monthly_labor_overhead_cents"`
+			Hours        string `json:"available_hours_per_month"`
+			Utilization  int64  `json:"productive_utilization_bps"`
+		}
+		if !decodeJob(w, r, &body) {
+			return
+		}
+		if body.Compensation == nil || body.Overhead == nil {
+			WriteError(w, http.StatusBadRequest, "invalid_labor_assumptions", "Provide all labor assumptions", nil)
+			return
+		}
+		result, err := costing.SuggestLaborRate(costing.LaborAssumptions{TargetMonthlyCompensationCents: *body.Compensation, MonthlyLaborOverheadCents: *body.Overhead, AvailableHoursPerMonth: body.Hours, ProductiveUtilizationBPS: body.Utilization})
+		if err != nil {
+			WriteError(w, http.StatusBadRequest, "invalid_labor_assumptions", "Invalid or out-of-range labor assumptions", nil)
+			return
+		}
+		writeJSON(w, http.StatusOK, result)
+	})
+
 	registerLaborRoute(router, authentication, domainauth.PermissionCostingRead, http.MethodGet, LaborRatesPath, func(w http.ResponseWriter, r *http.Request) {
 		values, err := service.ListRates(r.Context())
 		if err != nil {

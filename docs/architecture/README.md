@@ -17,6 +17,7 @@ Current documents:
 - [Manual print Job lifecycle](print-jobs.md)
 - [Job energy measurements](energy-measurements.md)
 - [Internal labor rates and Job time](labor.md)
+- [Exact costing primitives and labor rate assistant](costing-primitives.md)
 - [Printer maintenance history](maintenance.md)
 - [Desktop login](login.md)
 - [Desktop authentication boundary](desktop-authentication.md)

@@ -1,5 +1,9 @@
 # Internal labor rates and Job time
 
+The optional [labor rate assistant](costing-primitives.md) calculates internal
+hourly suggestions from monthly assumptions. Saving or overriding a suggestion
+uses the existing rate endpoints below and always requires explicit action.
+
 Migration `00018_labor.sql` separates reusable internal labor cost rates from
 immutable Job time entries. `labor_rates` contains only a name, activity type,
 integer `cost_hourly_rate_cents`, and active state. It deliberately contains no

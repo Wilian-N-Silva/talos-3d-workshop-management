@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: b0ec097
-last_reconciled_at_utc: 2026-09-05T00:36:53Z
+last_reconciled_commit: c78b4b2
+last_reconciled_at_utc: 2026-09-05
 reconciled_by: Codex
 ```
 
@@ -96,6 +96,9 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | LABOR-001 | verified_complete | migration `00018_labor` + validated internal rate service/repository + `costing.read`/`costing.manage` routes | 6db1a00 | Named active rates retain activity and integer internal hourly cost only; no billable/customer price fields exist. |
 | LABOR-002 | verified_complete | immutable Job labor entry repository/API + PostgreSQL snapshot test + minute summary tests | 6db1a00 | Non-commercial Jobs accept positive time entries; activity and hourly rate are snapshotted, with total minutes grouped by activity. |
 | MAINT-001 | verified_complete | migration `00019_maintenance_events` + validated service/repository + secured printer history routes | 82b59b0 | Typed immutable history retains UTC performance time, creator, downtime, and optional exact printer hours/integer-cent cost without any printer control path. |
+| COST-001 | verified_complete | accepted ADR-FIN-001 + `internal/domain/costing` exact decimal/basis-point/cent-rounding primitives and boundary tests | 603c248 | Exact intermediates; signed half ties away from zero; explicit int64 overflow rejection. |
+| LABOR-003 | verified_complete | pure labor formula + protected suggestion endpoint + exact native money transport + desktop assistant/save/override + HTTP/native/browser checks | 603c248 | Assumptions remain explicit; positive denominator required; saves use existing `costing.manage` API; no customer pricing or historical snapshot changes. |
+| COST-002 | verified_complete | exact machine depreciation/reserve calculator + residual/lifetime/fractional-cent tests | 603c248 | Rates retain exact fractional cents for downstream calculations; no energy/labor inclusion, override, or new persistence. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -116,10 +119,29 @@ Do not paste large diffs or lengthy summaries into this table.
 
 ## Active Work Package
 
-No new implementation Work Package is selected. The completed packages are
-listed below. PRs #32–#41 were verified merged into `main` on 2026-09-05 UTC;
-PR #31 is the final maintenance delivery and carries this integration record.
-When this revision is present on `main`, the full queue is integrated.
+WP-COST-01 — Financial primitives, internal labor rate assistant, and machine-hour calculation.
+
+- Tasks: COST-001, LABOR-003, and COST-002 (additional task requested by the user).
+- Branch: `work/wp-cost-01-labor-rate-assistant`.
+- State: financial policy approved in [ADR-FIN-001](docs/adr/ADR-FIN-001.md);
+  all three tasks implemented and locally validated; [PR #42](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/42)
+  is open for review. CI results are tracked on the PR; no merge has been performed.
+- Reconciliation: clean `main` at `c78b4b2`, remote pull confirmed up to date.
+  PR #31 and all ten predecessor packages are integrated. Migration 00018,
+  labor domain/service/tests and architecture documentation confirm existing
+  internal rates, explicit save/update, and immutable Job rate snapshots.
+  Migration 00019 and maintenance service confirm typed history with optional
+  cost/printer hours. At that baseline no financial primitives or labor assistant existed.
+- Implemented exact primitives, labor suggestion API/native/UI, explicit manual
+  save/override, and pure machine-hour calculation. No migrations or dependencies.
+- Validation passed: backend `go test ./...` with disposable PostgreSQL 18,
+  `go vet ./...`, and server build; desktop native tests/vet, frontend lint and
+  typecheck, and production `wails build`. No concurrency changes were made.
+- Browser fixture verified form rendering without console errors, exact assumption
+  transport, no implicit save, a 3025-cent manual override, and read-only controls.
+  This was a native-bridge fixture, not a live Wails-to-database end-to-end run.
+
+The completed packages are listed below. PRs #31–#41 are integrated into `main`.
 
 See [the integration record](docs/pr-integration-queue.md) for task IDs,
 migration order, verified revisions, merge commits, and validation evidence.
@@ -164,7 +186,7 @@ Keep this section lightweight. Older detail remains available through Git histor
 |---|---|---|---|
 | FUP-CFG-001 | reconciliation at 55e19a9 | Direct `go run` listener ignores `TALOS_SERVER_BIND_ADDRESS`/`TALOS_TRUSTED_LAN` and binds all interfaces; align listener policy with trusted-LAN security docs. | Future configuration/security Work Package; not expanded into authentication packages. |
 | FUP-DESK-001 | WP-DESK-02 at 1c9e285 | Desktop login does not yet persist/reuse the server-issued client device ID after local logout, so a later login registers another audit device. | Address with device/session management UI; no session-security weakening in this package. |
-| FUP-FIN-001 | reconciliation at f1583de | PRD section 38 requires `ADR-FIN-001`, but no rounding ADR exists. | Resolve/document the rounding decision when selecting COST-001; no financial policy introduced by maintenance work. |
+| FUP-FIN-001 | reconciliation at c78b4b2 | PRD section 38 requires an approved rounding method. | Resolved by accepted `docs/adr/ADR-FIN-001.md` and COST-001: exact intermediates and nearest-cent ties away from zero. |
 
 Use this only for concrete follow-up work discovered during implementation/reconciliation. Do not turn it into a second product backlog.
 

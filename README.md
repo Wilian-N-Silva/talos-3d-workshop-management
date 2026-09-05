@@ -18,7 +18,7 @@
 - `internal/` — server domain, application, infrastructure, and HTTP layers;
 - `desktop/` — Windows Wails application with React and TypeScript;
 - `migrations/` — embedded, numbered, one-way PostgreSQL migrations;
-- `docs/adr/` — approved architecture decisions (none currently);
+- `docs/adr/` — architecture decisions, including the accepted financial rounding policy;
 - `docs/architecture/` — implemented architecture and security behavior;
 - `scripts/` — operational/development script documentation.
 

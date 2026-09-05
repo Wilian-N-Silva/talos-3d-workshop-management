@@ -466,3 +466,27 @@ func (stub *sessionStoreStub) Delete(baseURL string) error {
 func (stub *connectionCheckerStub) CheckConnection(context.Context) (apiclient.ConnectionResult, error) {
 	return stub.result, stub.err
 }
+
+func (s *connectionCheckerStub) ListLaborRates(context.Context, string) ([]apiclient.LaborRate, error) {
+	return []apiclient.LaborRate{}, nil
+}
+func (s *connectionCheckerStub) SaveLaborRate(_ context.Context, token, id string, input apiclient.LaborRateInput) (apiclient.LaborRate, error) {
+	s.jobToken = token
+	return apiclient.LaborRate{ID: id, CostHourlyRateCents: input.CostHourlyRateCents}, nil
+}
+func (s *connectionCheckerStub) SuggestLaborRate(_ context.Context, token string, input apiclient.LaborAssumptions) (apiclient.LaborSuggestion, error) {
+	s.jobToken = token
+	return apiclient.LaborSuggestion{InternalHourlyCostCents: input.TargetMonthlyCompensationCents}, nil
+}
+func TestLaborOperationsKeepExactMoneyAndBearerNative(t *testing.T) {
+	remote := &connectionCheckerStub{}
+	app := newApp(&connectionStoreStub{loaded: serverconnection.Configuration{ServerBaseURL: "http://workshop.local"}}, &sessionStoreStub{loaded: credentials.Session{Token: "native-labor-token"}}, "1.2.0", func(string, string) (remoteClient, error) { return remote, nil })
+	suggestion, err := app.SuggestLaborRate(apiclient.LaborAssumptions{TargetMonthlyCompensationCents: "9223372036854775807"})
+	if err != nil || suggestion.InternalHourlyCostCents != "9223372036854775807" || remote.jobToken != "native-labor-token" {
+		t.Fatal(suggestion, err)
+	}
+	rate, err := app.SaveLaborRate("rate-id", apiclient.LaborRateInput{CostHourlyRateCents: "2918"})
+	if err != nil || rate.CostHourlyRateCents != "2918" || rate.ID != "rate-id" || remote.jobToken != "native-labor-token" {
+		t.Fatal(rate, err)
+	}
+}

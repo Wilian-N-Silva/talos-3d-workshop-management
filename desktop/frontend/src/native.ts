@@ -287,6 +287,9 @@ interface NativeApp {
     ListSupplyMovements(supplyID: string): Promise<SupplyMovement[]>;
     RecordSupplyMovement(supplyID: string, input: SupplyMovementInput): Promise<SupplyMovement>;
     ListLowInventory(spoolThresholdG: string): Promise<LowInventory>;
+    ListLaborRates(): Promise<LaborRate[]>;
+    SaveLaborRate(id: string, input: LaborRateInput): Promise<LaborRate>;
+    SuggestLaborRate(input: LaborAssumptions): Promise<LaborSuggestion>;
     ListJobs(): Promise<Job[]>;
     ListJobMaterialUsage(jobID: string): Promise<JobMaterialUsageSummary>;
     CreateJobMaterialUsage(jobID: string, input: JobMaterialUsageInput): Promise<JobMaterialUsage>;
@@ -395,3 +398,11 @@ export async function listJobMaterialUsage(jobID: string): Promise<JobMaterialUs
 export async function createJobMaterialUsage(jobID: string, input: JobMaterialUsageInput): Promise<JobMaterialUsage> { return app().CreateJobMaterialUsage(jobID, input); }
 export async function updateJobMaterialUsage(jobID: string, usageID: string, input: JobMaterialUsageInput): Promise<JobMaterialUsage> { return app().UpdateJobMaterialUsage(jobID, usageID, input); }
 export async function deleteJobMaterialUsage(jobID: string, usageID: string): Promise<void> { return app().DeleteJobMaterialUsage(jobID, usageID); }
+
+export type LaborRateInput = {name: string; activity_type: string; cost_hourly_rate_cents: string; active: boolean};
+export type LaborRate = LaborRateInput & {id: string};
+export type LaborAssumptions = {target_monthly_compensation_cents: string; monthly_labor_overhead_cents: string; available_hours_per_month: string; productive_utilization_bps: number};
+export type LaborSuggestion = {productive_hours: string; internal_hourly_cost_cents: string};
+export async function listLaborRates(): Promise<LaborRate[]> { return app().ListLaborRates(); }
+export async function saveLaborRate(id: string, input: LaborRateInput): Promise<LaborRate> { return app().SaveLaborRate(id, input); }
+export async function suggestLaborRate(input: LaborAssumptions): Promise<LaborSuggestion> { return app().SuggestLaborRate(input); }
