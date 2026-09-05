@@ -85,6 +85,7 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | INV-005 | verified_complete | signed append-only movement service/repository/API + native client/UI history | 6579bdf | All five movement types are validated; row locking atomically updates stock and rejects negative results without history writes. |
 | INV-006 | verified_complete | derived low-inventory query + configurable spool threshold + desktop item list | 6579bdf | Positive supply minimums and active measured spools are queried directly; no alert table or persisted alert state exists. |
 | BOM-001 | verified_complete | migration `00013_catalog_bom` + exact-decimal service/repository/routes + native client and catalog BOM UI | f09a8ad | Supply quantity and waste CRUD produce a non-persisted exact replacement-cost preview without inventing a cent-rounding rule. |
+| PRN-001 | verified_complete | migration `00014_printers` + validated logical printer service/repository and permission-protected CRUD routes | 0319efb | Exact nozzle/lifetime values and cents-based costing inputs are stored without access codes or any server-to-printer path. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -106,10 +107,10 @@ Do not paste large diffs or lengthy summaries into this table.
 ## Active Work Package
 
 ```yaml
-id: WP-CAT-03
-title: Catalog Supply BOM
-tasks: [BOM-001]
-branch: work/wp-cat-03-supply-bom
+id: WP-PRN-01
+title: Logical Printer Registry
+tasks: [PRN-001]
+branch: work/wp-prn-01-printer-registry
 state: ready_for_pr
 pull_request: null
 ```
@@ -131,6 +132,7 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
+| WP-PRN-01 | PRN-001 | 0319efb (local, unpushed) | Non-sensitive logical printer registry with exact costing inputs and secured CRUD API. |
 | WP-CAT-03 | BOM-001 | f09a8ad (local, unpushed) | Supply BOM CRUD and exact replacement-cost preview for commercial and internal catalog items. |
 | WP-INV-02 | INV-004, INV-005, INV-006 | 6579bdf (local, unpushed) | Supply CRUD, atomic auditable movements, explicit no-negative-stock policy, and derived low-inventory UI. |
 | WP-INV-01 | INV-001, INV-002, INV-003 | 7a8bc99 (local, unpushed) | Filament materials, physical spools, append-only weighing history, and permission-aware desktop workflow. |

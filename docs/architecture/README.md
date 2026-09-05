@@ -13,6 +13,7 @@ Current documents:
 - [Catalog items](catalog-items.md)
 - [Catalog parts and designs](catalog-designs.md)
 - [Catalog supply bill of materials](catalog-bom.md)
+- [Logical printer registry](printers.md)
 - [Desktop login](login.md)
 - [Desktop authentication boundary](desktop-authentication.md)
 - [Desktop permission-aware branded shell](desktop-shell.md)
