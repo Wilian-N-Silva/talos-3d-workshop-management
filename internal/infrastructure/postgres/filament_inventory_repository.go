@@ -261,7 +261,7 @@ func uniqueError(err error, constraint string) bool {
 }
 func fkError(err error, constraint string) bool {
 	var value *pgconn.PgError
-	return errors.As(err, &value) && value.Code == "23503" && value.ConstraintName == constraint
+	return errors.As(err, &value) && (value.Code == "23503" || value.Code == "23001") && value.ConstraintName == constraint
 }
 func utcPointer(value *time.Time) any {
 	if value == nil {
