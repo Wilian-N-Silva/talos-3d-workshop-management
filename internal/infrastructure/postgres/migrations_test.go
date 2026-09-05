@@ -50,6 +50,7 @@ func TestUserRoleMigrationBackfillsExistingUsersAgainstPostgreSQL(t *testing.T) 
 	})
 
 	for _, statement := range []string{
+		"DROP TABLE IF EXISTS printers",
 		"DROP TABLE IF EXISTS catalog_bom_items",
 		"DROP TABLE IF EXISTS supply_movements",
 		"DROP TABLE IF EXISTS supplies",
