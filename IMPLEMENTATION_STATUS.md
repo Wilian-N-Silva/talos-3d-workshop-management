@@ -124,13 +124,14 @@ WP-COST-01 — Financial primitives, internal labor rate assistant, and machine-
 - Tasks: COST-001, LABOR-003, and COST-002 (additional task requested by the user).
 - Branch: `work/wp-cost-01-labor-rate-assistant`.
 - State: financial policy approved in [ADR-FIN-001](docs/adr/ADR-FIN-001.md);
-  all three tasks implemented and locally validated; PR preparation in progress.
+  all three tasks implemented and locally validated; [PR #42](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/42)
+  is open for review. CI results are tracked on the PR; no merge has been performed.
 - Reconciliation: clean `main` at `c78b4b2`, remote pull confirmed up to date.
   PR #31 and all ten predecessor packages are integrated. Migration 00018,
   labor domain/service/tests and architecture documentation confirm existing
   internal rates, explicit save/update, and immutable Job rate snapshots.
   Migration 00019 and maintenance service confirm typed history with optional
-  cost/printer hours. No financial primitives or labor assistant exist.
+  cost/printer hours. At that baseline no financial primitives or labor assistant existed.
 - Implemented exact primitives, labor suggestion API/native/UI, explicit manual
   save/override, and pure machine-hour calculation. No migrations or dependencies.
 - Validation passed: backend `go test ./...` with disposable PostgreSQL 18,
