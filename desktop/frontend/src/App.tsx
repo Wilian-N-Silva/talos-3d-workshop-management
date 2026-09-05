@@ -3,6 +3,7 @@ import {WindowSetTitle} from '../wailsjs/runtime/runtime';
 import './App.css';
 import {CatalogWorkspace} from './CatalogWorkspace';
 import {InventoryWorkspace} from './InventoryWorkspace';
+import {JobWorkspace} from './JobWorkspace';
 import {
     AuthenticationState,
     ConnectionTestResult,
@@ -217,6 +218,9 @@ function App() {
                     </PermissionGate>
                     <PermissionGate permission="inventory.read">
                         <InventoryWorkspace canWrite={(authentication.permissions ?? []).includes('inventory.write')} />
+                    </PermissionGate>
+                    <PermissionGate permission="jobs.read">
+                        <JobWorkspace canWrite={(authentication.permissions ?? []).includes('jobs.update')} />
                     </PermissionGate>
                     {feedback && <p className={`feedback feedback--${feedback.tone}`} role="status">{feedback.message}</p>}
                 </main>

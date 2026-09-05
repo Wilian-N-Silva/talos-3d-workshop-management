@@ -47,6 +47,11 @@ type remoteClient interface {
 	ListSupplyMovements(context.Context, string, string) ([]apiclient.SupplyMovement, error)
 	RecordSupplyMovement(context.Context, string, string, apiclient.SupplyMovementInput) (apiclient.SupplyMovement, error)
 	ListLowInventory(context.Context, string, string) (apiclient.LowInventory, error)
+	ListJobs(context.Context, string) ([]apiclient.Job, error)
+	ListJobMaterialUsage(context.Context, string, string) (apiclient.JobMaterialUsageSummary, error)
+	CreateJobMaterialUsage(context.Context, string, string, apiclient.JobMaterialUsageInput) (apiclient.JobMaterialUsage, error)
+	UpdateJobMaterialUsage(context.Context, string, string, string, apiclient.JobMaterialUsageInput) (apiclient.JobMaterialUsage, error)
+	DeleteJobMaterialUsage(context.Context, string, string, string) error
 }
 
 type connectionClientFactory func(string, string) (remoteClient, error)
@@ -504,6 +509,65 @@ func (a *App) ListLowInventory(spoolThresholdG string) (apiclient.LowInventory, 
 		return apiclient.LowInventory{}, a.handleAuthenticatedError(baseURL, err)
 	}
 	return value, nil
+}
+
+func (a *App) ListJobs() ([]apiclient.Job, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return nil, err
+	}
+	values, err := client.ListJobs(a.applicationContext(), session.Token)
+	if err != nil {
+		return nil, a.handleAuthenticatedError(baseURL, err)
+	}
+	return values, nil
+}
+
+func (a *App) ListJobMaterialUsage(jobID string) (apiclient.JobMaterialUsageSummary, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.JobMaterialUsageSummary{}, err
+	}
+	value, err := client.ListJobMaterialUsage(a.applicationContext(), session.Token, jobID)
+	if err != nil {
+		return apiclient.JobMaterialUsageSummary{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return value, nil
+}
+
+func (a *App) CreateJobMaterialUsage(jobID string, input apiclient.JobMaterialUsageInput) (apiclient.JobMaterialUsage, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.JobMaterialUsage{}, err
+	}
+	value, err := client.CreateJobMaterialUsage(a.applicationContext(), session.Token, jobID, input)
+	if err != nil {
+		return apiclient.JobMaterialUsage{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return value, nil
+}
+
+func (a *App) UpdateJobMaterialUsage(jobID, usageID string, input apiclient.JobMaterialUsageInput) (apiclient.JobMaterialUsage, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.JobMaterialUsage{}, err
+	}
+	value, err := client.UpdateJobMaterialUsage(a.applicationContext(), session.Token, jobID, usageID, input)
+	if err != nil {
+		return apiclient.JobMaterialUsage{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return value, nil
+}
+
+func (a *App) DeleteJobMaterialUsage(jobID, usageID string) error {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return err
+	}
+	if err := client.DeleteJobMaterialUsage(a.applicationContext(), session.Token, jobID, usageID); err != nil {
+		return a.handleAuthenticatedError(baseURL, err)
+	}
+	return nil
 }
 
 func (a *App) authenticatedClient() (remoteClient, credentials.Session, string, error) {

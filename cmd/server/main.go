@@ -136,9 +136,15 @@ func main() {
 		logger.Printf("server startup failed: initialize printer service: %v", err)
 		os.Exit(1)
 	}
-	jobService, err := applicationjobs.NewService(postgres.NewJobRepository(database))
+	jobRepository := postgres.NewJobRepository(database)
+	jobService, err := applicationjobs.NewService(jobRepository)
 	if err != nil {
 		logger.Printf("server startup failed: initialize print job service: %v", err)
+		os.Exit(1)
+	}
+	jobMaterialUsageService, err := applicationjobs.NewMaterialUsageService(jobRepository)
+	if err != nil {
+		logger.Printf("server startup failed: initialize job material usage service: %v", err)
 		os.Exit(1)
 	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
@@ -232,6 +238,7 @@ func main() {
 		catalogBOMService,
 		printerService,
 		jobService,
+		jobMaterialUsageService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -258,6 +265,7 @@ func newHandler(
 	catalogBOM httpplatform.CatalogBOMService,
 	printers httpplatform.PrinterService,
 	jobs httpplatform.JobService,
+	jobMaterialUsage httpplatform.JobMaterialUsageService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -277,6 +285,7 @@ func newHandler(
 	httpplatform.RegisterCatalogBOM(apiRouter, authentication, catalogBOM)
 	httpplatform.RegisterPrinters(apiRouter, authentication, printers)
 	httpplatform.RegisterJobs(apiRouter, authentication, jobs)
+	httpplatform.RegisterJobMaterialUsage(apiRouter, authentication, jobMaterialUsage)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux
