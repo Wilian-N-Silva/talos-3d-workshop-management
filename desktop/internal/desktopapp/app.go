@@ -34,6 +34,10 @@ type remoteClient interface {
 	ListDesignVersions(context.Context, string, string) ([]apiclient.DesignVersion, error)
 	CreateDesignVersion(context.Context, string, string, apiclient.DesignVersionInput) (apiclient.DesignVersion, error)
 	AttachDesignFile(context.Context, string, string, string, string) (apiclient.DesignFile, error)
+	ListMaterials(context.Context, string) ([]apiclient.Material, error)
+	ListSpools(context.Context, string) ([]apiclient.Spool, error)
+	ListSpoolMeasurements(context.Context, string, string) ([]apiclient.SpoolMeasurement, error)
+	RecordSpoolMeasurement(context.Context, string, string, apiclient.MeasurementInput) (apiclient.SpoolMeasurement, error)
 }
 
 type connectionClientFactory func(string, string) (remoteClient, error)
@@ -336,6 +340,54 @@ func (a *App) AttachDesignFile(versionID, fileID, role string) (apiclient.Design
 		return apiclient.DesignFile{}, a.handleAuthenticatedError(baseURL, err)
 	}
 	return file, nil
+}
+
+func (a *App) ListMaterials() ([]apiclient.Material, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return nil, err
+	}
+	values, err := client.ListMaterials(a.applicationContext(), session.Token)
+	if err != nil {
+		return nil, a.handleAuthenticatedError(baseURL, err)
+	}
+	return values, nil
+}
+
+func (a *App) ListSpools() ([]apiclient.Spool, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return nil, err
+	}
+	values, err := client.ListSpools(a.applicationContext(), session.Token)
+	if err != nil {
+		return nil, a.handleAuthenticatedError(baseURL, err)
+	}
+	return values, nil
+}
+
+func (a *App) ListSpoolMeasurements(spoolID string) ([]apiclient.SpoolMeasurement, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return nil, err
+	}
+	values, err := client.ListSpoolMeasurements(a.applicationContext(), session.Token, spoolID)
+	if err != nil {
+		return nil, a.handleAuthenticatedError(baseURL, err)
+	}
+	return values, nil
+}
+
+func (a *App) RecordSpoolMeasurement(spoolID string, input apiclient.MeasurementInput) (apiclient.SpoolMeasurement, error) {
+	client, session, baseURL, err := a.authenticatedClient()
+	if err != nil {
+		return apiclient.SpoolMeasurement{}, err
+	}
+	value, err := client.RecordSpoolMeasurement(a.applicationContext(), session.Token, spoolID, input)
+	if err != nil {
+		return apiclient.SpoolMeasurement{}, a.handleAuthenticatedError(baseURL, err)
+	}
+	return value, nil
 }
 
 func (a *App) authenticatedClient() (remoteClient, credentials.Session, string, error) {

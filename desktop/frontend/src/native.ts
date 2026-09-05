@@ -125,6 +125,29 @@ export interface DesignVersionInput {
     attribution_text: string;
 }
 
+export interface Material {
+    id: string; manufacturer: string; name: string; material_type: string; color_name: string;
+    color_hex?: string | null; nominal_density: string; default_replacement_cost_per_kg_cents: number;
+    notes: string; created_at: string; updated_at: string;
+}
+
+export type SpoolStatus = 'sealed' | 'open' | 'stored' | 'drying' | 'empty' | 'retired';
+export interface Spool {
+    id: string; code: string; material_id: string; nominal_net_weight_g: string; tare_weight_g: string;
+    gross_weight_at_open_g?: string | null; current_remaining_weight_g?: string | null;
+    purchase_cost_cents: number; replacement_cost_per_kg_cents: number; opened_at?: string | null;
+    last_weighed_at?: string | null; last_dried_at?: string | null; storage_location: string;
+    storage_status: string; lot_number: string; status: SpoolStatus; created_at: string; updated_at: string;
+}
+
+export interface SpoolMeasurement {
+    id: string; spool_id: string; measured_at: string; gross_weight_g: string;
+    derived_remaining_weight_g: string; source: 'manual' | 'imported' | 'other'; notes: string;
+    recorded_by: string; created_at: string;
+}
+
+export interface MeasurementInput {measured_at: string; gross_weight_g: string; source: 'manual' | 'imported' | 'other'; notes: string;}
+
 interface NativeApp {
     GetServerConnection(): Promise<ServerConnection>;
     SaveServerConnection(baseURL: string): Promise<ServerConnection>;
@@ -142,6 +165,10 @@ interface NativeApp {
     ListDesignVersions(partID: string): Promise<DesignVersion[]>;
     CreateDesignVersion(partID: string, input: DesignVersionInput): Promise<DesignVersion>;
     AttachDesignFile(versionID: string, fileID: string, role: DesignFileRole): Promise<DesignFile>;
+    ListMaterials(): Promise<Material[]>;
+    ListSpools(): Promise<Spool[]>;
+    ListSpoolMeasurements(spoolID: string): Promise<SpoolMeasurement[]>;
+    RecordSpoolMeasurement(spoolID: string, input: MeasurementInput): Promise<SpoolMeasurement>;
 }
 
 declare global {
@@ -225,3 +252,8 @@ export async function createDesignVersion(partID: string, input: DesignVersionIn
 export async function attachDesignFile(versionID: string, fileID: string, role: DesignFileRole): Promise<DesignFile> {
     return app().AttachDesignFile(versionID, fileID, role);
 }
+
+export async function listMaterials(): Promise<Material[]> { return app().ListMaterials(); }
+export async function listSpools(): Promise<Spool[]> { return app().ListSpools(); }
+export async function listSpoolMeasurements(spoolID: string): Promise<SpoolMeasurement[]> { return app().ListSpoolMeasurements(spoolID); }
+export async function recordSpoolMeasurement(spoolID: string, input: MeasurementInput): Promise<SpoolMeasurement> { return app().RecordSpoolMeasurement(spoolID, input); }

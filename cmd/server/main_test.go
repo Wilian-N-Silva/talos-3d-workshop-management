@@ -20,6 +20,7 @@ import (
 	domainauth "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/auth"
 	domaincatalog "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/catalog"
 	domainfiles "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/files"
+	domaininventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/inventory"
 	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
 )
@@ -44,6 +45,7 @@ var testWorkshopLogoService = workshopLogoServiceStub{}
 var testFileTransferService = fileTransferServiceStub{}
 var testCatalogItemService = catalogItemServiceStub{}
 var testCatalogDesignService = catalogDesignServiceStub{}
+var testFilamentInventoryService = filamentInventoryServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -65,6 +67,7 @@ type workshopLogoServiceStub struct{}
 type fileTransferServiceStub struct{}
 type catalogItemServiceStub struct{}
 type catalogDesignServiceStub struct{}
+type filamentInventoryServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -357,6 +360,39 @@ func (catalogDesignServiceStub) AttachFile(context.Context, string, string, stri
 	return domaincatalog.DesignFile{}, nil
 }
 
+func (filamentInventoryServiceStub) CreateMaterial(context.Context, domaininventory.MaterialValues) (domaininventory.Material, error) {
+	return domaininventory.Material{}, nil
+}
+func (filamentInventoryServiceStub) GetMaterial(context.Context, string) (domaininventory.Material, error) {
+	return domaininventory.Material{}, domaininventory.ErrMaterialNotFound
+}
+func (filamentInventoryServiceStub) ListMaterials(context.Context) ([]domaininventory.Material, error) {
+	return []domaininventory.Material{}, nil
+}
+func (filamentInventoryServiceStub) UpdateMaterial(context.Context, string, domaininventory.MaterialValues) (domaininventory.Material, error) {
+	return domaininventory.Material{}, nil
+}
+func (filamentInventoryServiceStub) DeleteMaterial(context.Context, string) error { return nil }
+func (filamentInventoryServiceStub) CreateSpool(context.Context, domaininventory.SpoolValues) (domaininventory.Spool, error) {
+	return domaininventory.Spool{}, nil
+}
+func (filamentInventoryServiceStub) GetSpool(context.Context, string) (domaininventory.Spool, error) {
+	return domaininventory.Spool{}, domaininventory.ErrSpoolNotFound
+}
+func (filamentInventoryServiceStub) ListSpools(context.Context) ([]domaininventory.Spool, error) {
+	return []domaininventory.Spool{}, nil
+}
+func (filamentInventoryServiceStub) UpdateSpool(context.Context, string, domaininventory.SpoolValues) (domaininventory.Spool, error) {
+	return domaininventory.Spool{}, nil
+}
+func (filamentInventoryServiceStub) DeleteSpool(context.Context, string) error { return nil }
+func (filamentInventoryServiceStub) RecordMeasurement(context.Context, string, string, domaininventory.MeasurementValues) (domaininventory.SpoolMeasurement, error) {
+	return domaininventory.SpoolMeasurement{}, nil
+}
+func (filamentInventoryServiceStub) ListMeasurements(context.Context, string) ([]domaininventory.SpoolMeasurement, error) {
+	return []domaininventory.SpoolMeasurement{}, nil
+}
+
 func TestHandlerRegistersFiles(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
 	request.Header.Set("Authorization", "Bearer test-token")
@@ -376,6 +412,16 @@ func TestHandlerRegistersCatalogItems(t *testing.T) {
 
 	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
 
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+}
+
+func TestHandlerRegistersFilamentInventory(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.SpoolsPath, nil)
+	request.Header.Set("Authorization", "Bearer test-token")
+	response := httptest.NewRecorder()
+	newTestHandler(t, readinessStub{}).ServeHTTP(response, request)
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
 	}
@@ -402,5 +448,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		1024,
 		testCatalogItemService,
 		testCatalogDesignService,
+		testFilamentInventoryService,
 	)
 }

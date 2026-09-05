@@ -190,6 +190,20 @@ func TestCatalogUnauthorizedClearsRejectedSession(t *testing.T) {
 	}
 }
 
+func TestInventoryOperationsKeepBearerTokenNative(t *testing.T) {
+	remote := &connectionCheckerStub{spools: []apiclient.Spool{{ID: "spool-id"}}}
+	app := newApp(&connectionStoreStub{loaded: serverconnection.Configuration{ServerBaseURL: "http://workshop.local"}}, &sessionStoreStub{loaded: credentials.Session{Token: "native-inventory-token"}}, "1.2.0", func(string, string) (remoteClient, error) { return remote, nil })
+	if _, err := app.ListSpools(); err != nil || remote.inventoryToken != "native-inventory-token" {
+		t.Fatalf("ListSpools() error=%v token=%q", err, remote.inventoryToken)
+	}
+	if _, err := app.ListSpoolMeasurements("spool-id"); err != nil || remote.inventorySpoolID != "spool-id" {
+		t.Fatalf("ListSpoolMeasurements() error=%v spool=%q", err, remote.inventorySpoolID)
+	}
+	if _, err := app.RecordSpoolMeasurement("spool-id", apiclient.MeasurementInput{GrossWeightG: "845.5"}); err != nil || remote.inventorySpoolID != "spool-id" {
+		t.Fatalf("RecordSpoolMeasurement() error=%v spool=%q", err, remote.inventorySpoolID)
+	}
+}
+
 type connectionStoreStub struct {
 	loaded    serverconnection.Configuration
 	loadError error
@@ -211,32 +225,37 @@ func (stub *connectionStoreStub) Save(value string) (serverconnection.Configurat
 }
 
 type connectionCheckerStub struct {
-	result          apiclient.ConnectionResult
-	err             error
-	loginResult     apiclient.LoginResult
-	loginError      error
-	loginInput      apiclient.LoginInput
-	branding        apiclient.Branding
-	brandingErr     error
-	settings        apiclient.WorkshopSettings
-	settingsError   error
-	settingsToken   string
-	catalogPage     apiclient.CatalogPage
-	catalogItem     apiclient.CatalogItem
-	catalogError    error
-	catalogToken    string
-	catalogInput    apiclient.CatalogItemInput
-	catalogID       string
-	parts           []apiclient.CatalogPart
-	part            apiclient.CatalogPart
-	versions        []apiclient.DesignVersion
-	version         apiclient.DesignVersion
-	designFile      apiclient.DesignFile
-	designToken     string
-	designItemID    string
-	designPartID    string
-	designVersionID string
-	designFileID    string
+	result           apiclient.ConnectionResult
+	err              error
+	loginResult      apiclient.LoginResult
+	loginError       error
+	loginInput       apiclient.LoginInput
+	branding         apiclient.Branding
+	brandingErr      error
+	settings         apiclient.WorkshopSettings
+	settingsError    error
+	settingsToken    string
+	catalogPage      apiclient.CatalogPage
+	catalogItem      apiclient.CatalogItem
+	catalogError     error
+	catalogToken     string
+	catalogInput     apiclient.CatalogItemInput
+	catalogID        string
+	parts            []apiclient.CatalogPart
+	part             apiclient.CatalogPart
+	versions         []apiclient.DesignVersion
+	version          apiclient.DesignVersion
+	designFile       apiclient.DesignFile
+	designToken      string
+	designItemID     string
+	designPartID     string
+	designVersionID  string
+	designFileID     string
+	materials        []apiclient.Material
+	spools           []apiclient.Spool
+	measurements     []apiclient.SpoolMeasurement
+	inventoryToken   string
+	inventorySpoolID string
 }
 
 func (stub *connectionCheckerStub) Login(_ context.Context, input apiclient.LoginInput) (apiclient.LoginResult, error) {
@@ -287,6 +306,23 @@ func (stub *connectionCheckerStub) CreateDesignVersion(_ context.Context, token,
 func (stub *connectionCheckerStub) AttachDesignFile(_ context.Context, token, versionID, fileID, _ string) (apiclient.DesignFile, error) {
 	stub.designToken, stub.designVersionID, stub.designFileID = token, versionID, fileID
 	return stub.designFile, stub.catalogError
+}
+
+func (stub *connectionCheckerStub) ListMaterials(_ context.Context, token string) ([]apiclient.Material, error) {
+	stub.inventoryToken = token
+	return stub.materials, stub.catalogError
+}
+func (stub *connectionCheckerStub) ListSpools(_ context.Context, token string) ([]apiclient.Spool, error) {
+	stub.inventoryToken = token
+	return stub.spools, stub.catalogError
+}
+func (stub *connectionCheckerStub) ListSpoolMeasurements(_ context.Context, token, spoolID string) ([]apiclient.SpoolMeasurement, error) {
+	stub.inventoryToken, stub.inventorySpoolID = token, spoolID
+	return stub.measurements, stub.catalogError
+}
+func (stub *connectionCheckerStub) RecordSpoolMeasurement(_ context.Context, token, spoolID string, _ apiclient.MeasurementInput) (apiclient.SpoolMeasurement, error) {
+	stub.inventoryToken, stub.inventorySpoolID = token, spoolID
+	return apiclient.SpoolMeasurement{}, stub.catalogError
 }
 
 type sessionStoreStub struct {
