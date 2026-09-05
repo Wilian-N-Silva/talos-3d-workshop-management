@@ -116,56 +116,17 @@ Do not paste large diffs or lengthy summaries into this table.
 
 ## Active Work Package
 
-Integration queue: **#32 → #33 → #34 → #35 → #36 → #37 → #38 → #39 → #40 → #41 → #31**.
-See [the verified PR queue](docs/pr-integration-queue.md) for task IDs, branch
-bases, migration order, verified commits, checks, and merge instructions.
-Only #32 targets `main` and is ready for review. All successors, including #31,
-are drafts targeting their predecessors for scoped review. No PR was merged.
-Three existing PostgreSQL fixes were moved into their earliest required packages
-and propagated without rewriting history; every package passed local backend
-checks with PostgreSQL 18 and all affected desktop checks.
+No new implementation Work Package is selected. The completed packages are
+listed below. PRs #32–#41 were verified merged into `main` on 2026-09-05 UTC;
+PR #31 is the final maintenance delivery and carries this integration record.
+When this revision is present on `main`, the full queue is integrated.
 
-```yaml
-id: WP-MAINT-01
-title: Printer Maintenance History
-tasks: [MAINT-001]
-branch: work/wp-maint-01-history
-state: in_review
-pull_request: https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/31
-```
-
-Recommended `state` values:
-
-```text
-planned
-in_progress
-ready_for_pr
-in_review
-```
-
-After a package is merged and a later reconciliation confirms it on `main`, clear this section or replace it with the next package.
-
-Reconciliation at `f1583de` found a clean working tree and a local dependency
-chain through maintenance (migrations `00009`–`00019`). Remote `main` remains at
-`c7abe0c`; none of these local packages has an open PR. Job lifecycle/material,
-energy, labor, and maintenance service/HTTP tests pass. Maintenance schema,
-repository, routes, and integration-test coverage support MAINT-001; this
-continuation finishes that existing package with stricter input validation and
-final checks before publication. The maintenance-only review base is
-`work/wp-labor-01-internal-time`; the earlier packages remain unmerged.
-
-Final validation on 2026-09-04: `go test ./...` passed with
-`TALOS_TEST_DATABASE_URL` pointing to a fresh disposable PostgreSQL 18 database,
-including migration lifecycle and maintenance history/foreign-key tests.
-`go vet ./...`, `go build -o bin/server.exe ./cmd/server`, and `git diff --check`
-passed. Added regressions cover malformed/over-precision hours, database integer
-bounds, optional costs/hours, all event types, UTC audit values, and HTTP 400.
-No desktop code or concurrency behavior changed in this package.
-
-Maintenance validation fixes and tests are committed at `2b47b1b`. PR #31 is
-open against `work/wp-labor-01-internal-time`; both branches are published.
-The prior statement about no open PRs describes the reconciliation baseline,
-before publication. No package was merged.
+See [the integration record](docs/pr-integration-queue.md) for task IDs,
+migration order, verified revisions, merge commits, and validation evidence.
+All ten predecessor merges used successful backend, desktop, and security
+checks; each retargeted diff remained scoped to its package. The final PR must
+also pass its checks before merging. No financial policy or schema change was
+introduced by this integration work.
 
 ---
 
@@ -173,17 +134,17 @@ before publication. No package was merged.
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
-| WP-MAINT-01 | MAINT-001 | 82b59b0 (PR [#31](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/31), unmerged) | Typed immutable printer maintenance history with optional exact lifetime hours/cost and secured API. |
-| WP-LABOR-01 | LABOR-001, LABOR-002 | 6db1a00 (PR [#41](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/41), unmerged) | Internal-only labor rate configuration and immutable non-commercial-capable Job time entries with minute totals. |
-| WP-ENERGY-01 | ENERGY-001 | a94f2aa (PR [#40](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/40), unmerged) | Exact Job energy evidence with meter/direct/estimated sources, recorder audit, tariff snapshots, and secured API. |
-| WP-JOB-02 | JOB-003, JOB-004 | cd09805 (PR [#39](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/39), unmerged) | Exact per-Job spool usage, immutable cost snapshot fields, source-aware totals, secured CRUD API, and desktop workflow. |
-| WP-JOB-01 | JOB-001, JOB-002, JOB-005, JOB-006 | fb4b840 (PR [#38](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/38), unmerged) | Non-commercial-capable manual Job lifecycle, explicit quality review, and atomic append-only audit events. |
-| WP-PRN-01 | PRN-001 | 0319efb (PR [#37](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/37), unmerged) | Non-sensitive logical printer registry with exact costing inputs and secured CRUD API. |
-| WP-CAT-03 | BOM-001 | f09a8ad (PR [#36](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/36), unmerged) | Supply BOM CRUD and exact replacement-cost preview for commercial and internal catalog items. |
-| WP-INV-02 | INV-004, INV-005, INV-006 | 6579bdf (PR [#35](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/35), unmerged) | Supply CRUD, atomic auditable movements, explicit no-negative-stock policy, and derived low-inventory UI. |
-| WP-INV-01 | INV-001, INV-002, INV-003 | 7a8bc99 (PR [#34](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/34), unmerged) | Filament materials, physical spools, append-only weighing history, and permission-aware desktop workflow. |
-| WP-CAT-02 | CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009 | 6be2c77 (PR [#33](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/33), unmerged) | Immutable design history, file roles, provenance/license tracking, and advisory license UI. |
-| WP-CAT-01 | CAT-001, CAT-002, CAT-003 | f447cb5 (PR [#32](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/32), unmerged) | Catalog item API and permission-aware desktop vertical slice; PR registered in the dependency queue. |
+| WP-MAINT-01 | MAINT-001 | 2b47b1b (final delivery: PR [#31](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/31)) | Typed immutable printer maintenance history with optional exact lifetime hours/cost and secured API. |
+| WP-LABOR-01 | LABOR-001, LABOR-002 | 3192309 (PR [#41](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/41), merged) | Internal-only labor rate configuration and immutable non-commercial-capable Job time entries with minute totals. |
+| WP-ENERGY-01 | ENERGY-001 | 9b86292 (PR [#40](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/40), merged) | Exact Job energy evidence with meter/direct/estimated sources, recorder audit, tariff snapshots, and secured API. |
+| WP-JOB-02 | JOB-003, JOB-004 | d605e44 (PR [#39](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/39), merged) | Exact per-Job spool usage, immutable cost snapshot fields, source-aware totals, secured CRUD API, and desktop workflow. |
+| WP-JOB-01 | JOB-001, JOB-002, JOB-005, JOB-006 | 3446ab5 (PR [#38](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/38), merged) | Non-commercial-capable manual Job lifecycle, explicit quality review, and atomic append-only audit events. |
+| WP-PRN-01 | PRN-001 | 202fb97 (PR [#37](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/37), merged) | Non-sensitive logical printer registry with exact costing inputs and secured CRUD API. |
+| WP-CAT-03 | BOM-001 | 8ba4eb3 (PR [#36](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/36), merged) | Supply BOM CRUD and exact replacement-cost preview for commercial and internal catalog items. |
+| WP-INV-02 | INV-004, INV-005, INV-006 | a54eb7c (PR [#35](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/35), merged) | Supply CRUD, atomic auditable movements, explicit no-negative-stock policy, and derived low-inventory UI. |
+| WP-INV-01 | INV-001, INV-002, INV-003 | 20203ad (PR [#34](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/34), merged) | Filament materials, physical spools, append-only weighing history, and permission-aware desktop workflow. |
+| WP-CAT-02 | CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009 | 8926e95 (PR [#33](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/33), merged) | Immutable design history, file roles, provenance/license tracking, and advisory license UI. |
+| WP-CAT-01 | CAT-001, CAT-002, CAT-003 | cdea7fe (PR [#32](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/32), merged) | Catalog item API and permission-aware desktop vertical slice; PR registered in the dependency queue. |
 | WP-FILE-01 | FILE-002, FILE-003 | c7abe0c (PR #30) | Authorized immutable upload and download through server-controlled storage. |
 | WP-DESK-03 | DESK-005, DESK-006, DESK-007 | 6c19f41 (PR #29) | Permission-aware navigation, fixed theme policy, and workshop branding. |
 | WP-DESK-02 | DESK-003, DESK-004 | df61891 (PR #28) | Native login and Windows Credential Manager session persistence. |

@@ -3,12 +3,42 @@
 Registro verificado em 2026-09-05 UTC (2026-09-04 em America/Sao_Paulo).
 Base integrada: `main` em `c7abe0c`. Reconciliação iniciada em `92cd5b8`.
 
+Os parágrafos e a tabela de preparação abaixo são um registro histórico.
+
+## Execução autorizada dos merges
+
+Após o registro inicial, o usuário autorizou explicitamente integrar todos os
+11 PRs. Os dez predecessores foram confirmados como MERGED em `main`, na ordem
+abaixo, após checks aprovados. O PR #31 entrega manutenção e este registro final;
+quando este documento estiver em `main`, a fila inteira estará integrada.
+
+| PR | Merge commit | Data/hora UTC |
+|---|---|---|
+| #32 | `cdea7fe` | 2026-09-05T00:41:47Z |
+| #33 | `8926e95` | 2026-09-05T00:42:48Z |
+| #34 | `20203ad` | 2026-09-05T00:42:59Z |
+| #35 | `a54eb7c` | 2026-09-05T00:43:09Z |
+| #36 | `8ba4eb3` | 2026-09-05T00:43:19Z |
+| #37 | `202fb97` | 2026-09-05T00:44:00Z |
+| #38 | `3446ab5` | 2026-09-05T00:44:11Z |
+| #39 | `d605e44` | 2026-09-05T00:44:21Z |
+| #40 | `9b86292` | 2026-09-05T00:44:32Z |
+| #41 | `3192309` | 2026-09-05T00:44:43Z |
+| [#31](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/31) | PR de entrega deste registro | Consultar merge confirmado no GitHub |
+
+As bases históricas da tabela original abaixo documentam a preparação da fila.
+Durante a execução, cada PR foi redirecionado para `main` antes do merge.
+A conferência verificou que o conteúdo de main correspondia ao predecessor e
+que o SHA de head permanecia o esperado. O CI da integração final deve ser
+observado no GitHub; o registro não presume resultados ainda pendentes.
+
+
 Os 11 pacotes abaixo já estavam implementados em uma cadeia local. Foram
 publicados com um PR por pacote; apenas o primeiro está pronto para revisão.
 Os demais permanecem em draft até a integração do predecessor. O PR #31 foi
 preservado e ocupa a última posição; número de PR não determina ordem de merge.
 
-| Ordem | Pacote | Tasks | PR | Base de revisão atual | Migration | Commit verificado |
+| Ordem | Pacote | Tasks | PR | Base de revisão original | Migration | Commit verificado |
 |---|---|---|---|---|---|---|
 | 1 | WP-CAT-01 | CAT-001, CAT-002, CAT-003 | [#32](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/32) | `main` | 00009 | `f447cb5` |
 | 2 | WP-CAT-02 | CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009 | [#33](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/33) | `work/wp-cat-01-catalog-items` | 00010 | `69c6947` |
@@ -76,4 +106,3 @@ Não houve nova migration, alteração de fórmula financeira ou mudança de esc
 de produto. As saídas regeneradas pelo Wails ficaram na cópia temporária.
 O CI de cada PR continua sendo obrigatório; passar localmente não substitui CI
 nem revisão. Os links dos PRs acima mostram o estado atualizado dos checks.
-
