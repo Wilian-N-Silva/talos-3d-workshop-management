@@ -108,6 +108,11 @@ func main() {
 		logger.Printf("server startup failed: initialize catalog item service: %v", err)
 		os.Exit(1)
 	}
+	catalogDesignService, err := applicationcatalog.NewDesignService(postgres.NewCatalogDesignRepository(database))
+	if err != nil {
+		logger.Printf("server startup failed: initialize catalog design service: %v", err)
+		os.Exit(1)
+	}
 	maximumLogoBytes := int64(applicationsettings.DefaultMaximumLogoBytes)
 	if serverConfig.UploadMaxBytes < maximumLogoBytes {
 		maximumLogoBytes = serverConfig.UploadMaxBytes
@@ -193,6 +198,7 @@ func main() {
 		fileTransferService,
 		serverConfig.UploadMaxBytes,
 		catalogItemService,
+		catalogDesignService,
 	)); err != nil {
 		logger.Printf("server stopped with error: %v", err)
 		os.Exit(1)
@@ -213,6 +219,7 @@ func newHandler(
 	files httpplatform.FileTransferService,
 	maximumFileBytes int64,
 	catalogItems httpplatform.CatalogItemService,
+	catalogDesigns httpplatform.CatalogDesignService,
 ) http.Handler {
 	mux := http.NewServeMux()
 	httpplatform.RegisterLiveness(mux)
@@ -226,6 +233,7 @@ func newHandler(
 	httpplatform.RegisterWorkshopLogo(apiRouter, authentication, logo, maximumLogoBytes)
 	httpplatform.RegisterFiles(apiRouter, authentication, files, maximumFileBytes)
 	httpplatform.RegisterCatalogItems(apiRouter, authentication, catalogItems)
+	httpplatform.RegisterCatalogDesigns(apiRouter, authentication, catalogDesigns)
 	httpplatform.RegisterAPIV1(mux, apiRouter)
 
 	return mux

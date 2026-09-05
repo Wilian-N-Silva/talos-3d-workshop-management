@@ -93,6 +93,11 @@ PostgreSQL, migration state, and writable file storage; printer state is
 intentionally excluded. Versioned product APIs live below `/api/v1` and return
 the standard JSON error envelope documented by the HTTP tests.
 
+Catalog design routes expose item parts at `/api/v1/catalog/items/{itemID}/parts`,
+immutable version history at `/api/v1/catalog/parts/{partID}/design-versions`, and
+role-based immutable file links at
+`/api/v1/catalog/design-versions/{versionID}/files`.
+
 ## Authentication and access control
 
 First-owner setup is available through `GET /api/setup/status` and

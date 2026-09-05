@@ -110,6 +110,15 @@ func TestCatalogUpdateAndDeleteUseItemID(t *testing.T) {
 	}
 }
 
+func TestCatalogDeletePreservesImmutableDesignHistory(t *testing.T) {
+	service := &catalogItemServiceStub{err: domaincatalog.ErrDesignHistoryExists}
+	router := NewAPIV1Router()
+	RegisterCatalogItems(router, authorizedCatalogUser(domainauth.RoleDesigner), service)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, catalogRequest(http.MethodDelete, CatalogItemsPath+"/item-id", ""))
+	assertAPIError(t, response, http.StatusConflict, "design_history_exists", "Immutable design history prevents deletion")
+}
+
 func catalogRequest(method, target, body string) *http.Request {
 	request := httptest.NewRequest(method, target, strings.NewReader(body))
 	request.Header.Set("Authorization", "Bearer token")

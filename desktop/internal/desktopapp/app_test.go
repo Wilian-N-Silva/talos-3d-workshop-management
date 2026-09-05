@@ -165,6 +165,15 @@ func TestCatalogOperationsKeepBearerTokenInNativeLayer(t *testing.T) {
 	if _, err := app.UpdateCatalogItem("item-id", input); err != nil || remote.catalogID != "item-id" {
 		t.Fatalf("UpdateCatalogItem() error = %v, id = %q", err, remote.catalogID)
 	}
+	if _, err := app.ListCatalogParts("item-id"); err != nil || remote.designToken != "native-only-token" || remote.designItemID != "item-id" {
+		t.Fatalf("ListCatalogParts() error = %v, token/item = %q/%q", err, remote.designToken, remote.designItemID)
+	}
+	if _, err := app.CreateDesignVersion("part-id", apiclient.DesignVersionInput{Version: "v1"}); err != nil || remote.designPartID != "part-id" {
+		t.Fatalf("CreateDesignVersion() error = %v, part = %q", err, remote.designPartID)
+	}
+	if _, err := app.AttachDesignFile("version-id", "file-id", "print"); err != nil || remote.designVersionID != "version-id" || remote.designFileID != "file-id" {
+		t.Fatalf("AttachDesignFile() error = %v, version/file = %q/%q", err, remote.designVersionID, remote.designFileID)
+	}
 }
 
 func TestCatalogUnauthorizedClearsRejectedSession(t *testing.T) {
@@ -202,22 +211,32 @@ func (stub *connectionStoreStub) Save(value string) (serverconnection.Configurat
 }
 
 type connectionCheckerStub struct {
-	result        apiclient.ConnectionResult
-	err           error
-	loginResult   apiclient.LoginResult
-	loginError    error
-	loginInput    apiclient.LoginInput
-	branding      apiclient.Branding
-	brandingErr   error
-	settings      apiclient.WorkshopSettings
-	settingsError error
-	settingsToken string
-	catalogPage   apiclient.CatalogPage
-	catalogItem   apiclient.CatalogItem
-	catalogError  error
-	catalogToken  string
-	catalogInput  apiclient.CatalogItemInput
-	catalogID     string
+	result          apiclient.ConnectionResult
+	err             error
+	loginResult     apiclient.LoginResult
+	loginError      error
+	loginInput      apiclient.LoginInput
+	branding        apiclient.Branding
+	brandingErr     error
+	settings        apiclient.WorkshopSettings
+	settingsError   error
+	settingsToken   string
+	catalogPage     apiclient.CatalogPage
+	catalogItem     apiclient.CatalogItem
+	catalogError    error
+	catalogToken    string
+	catalogInput    apiclient.CatalogItemInput
+	catalogID       string
+	parts           []apiclient.CatalogPart
+	part            apiclient.CatalogPart
+	versions        []apiclient.DesignVersion
+	version         apiclient.DesignVersion
+	designFile      apiclient.DesignFile
+	designToken     string
+	designItemID    string
+	designPartID    string
+	designVersionID string
+	designFileID    string
 }
 
 func (stub *connectionCheckerStub) Login(_ context.Context, input apiclient.LoginInput) (apiclient.LoginResult, error) {
@@ -247,6 +266,27 @@ func (stub *connectionCheckerStub) CreateCatalogItem(_ context.Context, token st
 func (stub *connectionCheckerStub) UpdateCatalogItem(_ context.Context, token, id string, input apiclient.CatalogItemInput) (apiclient.CatalogItem, error) {
 	stub.catalogToken, stub.catalogID, stub.catalogInput = token, id, input
 	return stub.catalogItem, stub.catalogError
+}
+
+func (stub *connectionCheckerStub) ListCatalogParts(_ context.Context, token, itemID string) ([]apiclient.CatalogPart, error) {
+	stub.designToken, stub.designItemID = token, itemID
+	return stub.parts, stub.catalogError
+}
+func (stub *connectionCheckerStub) CreateCatalogPart(_ context.Context, token, itemID string, _ apiclient.CatalogPartInput) (apiclient.CatalogPart, error) {
+	stub.designToken, stub.designItemID = token, itemID
+	return stub.part, stub.catalogError
+}
+func (stub *connectionCheckerStub) ListDesignVersions(_ context.Context, token, partID string) ([]apiclient.DesignVersion, error) {
+	stub.designToken, stub.designPartID = token, partID
+	return stub.versions, stub.catalogError
+}
+func (stub *connectionCheckerStub) CreateDesignVersion(_ context.Context, token, partID string, _ apiclient.DesignVersionInput) (apiclient.DesignVersion, error) {
+	stub.designToken, stub.designPartID = token, partID
+	return stub.version, stub.catalogError
+}
+func (stub *connectionCheckerStub) AttachDesignFile(_ context.Context, token, versionID, fileID, _ string) (apiclient.DesignFile, error) {
+	stub.designToken, stub.designVersionID, stub.designFileID = token, versionID, fileID
+	return stub.designFile, stub.catalogError
 }
 
 type sessionStoreStub struct {

@@ -4,8 +4,18 @@ import {
     CatalogItemInput,
     CatalogPurpose,
     CatalogStatus,
+    CatalogPart,
+    DesignFileRole,
+    DesignOrigin,
+    DesignVersion,
+    DesignVersionInput,
+    attachDesignFile,
+    createCatalogPart,
     createCatalogItem,
+    createDesignVersion,
+    listCatalogParts,
     listCatalogItems,
+    listDesignVersions,
     updateCatalogItem,
 } from './native';
 
@@ -177,6 +187,7 @@ export function CatalogWorkspace({canWrite}: {canWrite: boolean}) {
                                 </dl>
                                 <p>{selected.description || 'Sem descrição.'}</p>
                                 <div className="catalog-tags">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+                                <DesignHistory key={selected.id} item={selected} canWrite={canWrite} onError={setFeedback} />
                             </>
                         ) : <p>Selecione um item ou crie o primeiro cadastro.</p>}
                     </article>
@@ -184,6 +195,138 @@ export function CatalogWorkspace({canWrite}: {canWrite: boolean}) {
             )}
         </section>
     );
+}
+
+const originLabels: Record<DesignOrigin, string> = {
+    original: 'Original', customer: 'Cliente', remix: 'Remix', third_party: 'Terceiro', unknown: 'Desconhecida',
+};
+
+const fileRoleLabels: Record<DesignFileRole, string> = {
+    source: 'Fonte', mesh: 'Malha', print: 'ImpressÃ£o', preview: 'PrÃ©via', documentation: 'DocumentaÃ§Ã£o', other: 'Outro',
+};
+
+type VersionDraft = {
+    version: string;
+    notes: string;
+    origin: DesignOrigin;
+    sourceURL: string;
+    originalAuthor: string;
+    licenseName: string;
+    commercialPermission: 'unknown' | 'allowed' | 'denied';
+    attributionRequired: boolean;
+    attributionText: string;
+};
+
+const emptyVersionDraft: VersionDraft = {
+    version: '', notes: '', origin: 'unknown', sourceURL: '', originalAuthor: '', licenseName: '',
+    commercialPermission: 'unknown', attributionRequired: false, attributionText: '',
+};
+
+function DesignHistory({item, canWrite, onError}: {item: CatalogItem; canWrite: boolean; onError: (message: string | null) => void}) {
+    const [parts, setParts] = useState<CatalogPart[]>([]);
+    const [selectedPartID, setSelectedPartID] = useState<string | null>(null);
+    const [versionsByPart, setVersionsByPart] = useState<Record<string, DesignVersion[]>>({});
+    const [partName, setPartName] = useState('');
+    const [partQuantity, setPartQuantity] = useState(1);
+    const [versionDraft, setVersionDraft] = useState<VersionDraft>(emptyVersionDraft);
+    const [fileID, setFileID] = useState('');
+    const [fileRole, setFileRole] = useState<DesignFileRole>('print');
+    const [busy, setBusy] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+        void listCatalogParts(item.id).then(async (loadedParts) => {
+            const histories = await Promise.all(loadedParts.map(async (part) => [part.id, await listDesignVersions(part.id)] as const));
+            if (!active) return;
+            setParts(loadedParts);
+            setSelectedPartID(loadedParts[0]?.id ?? null);
+            setVersionsByPart(Object.fromEntries(histories));
+        }).catch((error: unknown) => active && onError(messageFrom(error)));
+        return () => { active = false; };
+    }, [item.id, onError]);
+
+    const selectedPart = parts.find((part) => part.id === selectedPartID) ?? null;
+    const versions = selectedPartID ? versionsByPart[selectedPartID] ?? [] : [];
+    const latestVersions = parts.map((part) => versionsByPart[part.id]?.[0]);
+    const hasDenied = latestVersions.some((version) => version?.commercial_use_allowed === false);
+    const hasUnknown = parts.length === 0 || latestVersions.some((version) => !version || version.commercial_use_allowed == null);
+
+    async function addPart(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault(); setBusy(true); onError(null);
+        try {
+            const part = await createCatalogPart(item.id, {name: partName, quantity: partQuantity, notes: ''});
+            setParts((current) => [...current, part].sort((left, right) => left.name.localeCompare(right.name)));
+            setVersionsByPart((current) => ({...current, [part.id]: []}));
+            setSelectedPartID(part.id); setPartName(''); setPartQuantity(1);
+        } catch (error: unknown) { onError(messageFrom(error)); } finally { setBusy(false); }
+    }
+
+    async function addVersion(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault(); if (!selectedPart) return; setBusy(true); onError(null);
+        const commercialUseAllowed = versionDraft.commercialPermission === 'unknown' ? null : versionDraft.commercialPermission === 'allowed';
+        const input: DesignVersionInput = {
+            version: versionDraft.version, notes: versionDraft.notes, origin: versionDraft.origin,
+            source_url: versionDraft.sourceURL.trim() || null, original_author: versionDraft.originalAuthor,
+            license_name: versionDraft.licenseName, commercial_use_allowed: commercialUseAllowed,
+            attribution_required: versionDraft.attributionRequired, attribution_text: versionDraft.attributionText,
+        };
+        try {
+            const created = await createDesignVersion(selectedPart.id, input);
+            setVersionsByPart((current) => ({...current, [selectedPart.id]: [created, ...(current[selectedPart.id] ?? [])]}));
+            setVersionDraft(emptyVersionDraft);
+        } catch (error: unknown) { onError(messageFrom(error)); } finally { setBusy(false); }
+    }
+
+    async function linkFile(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault(); const latest = versions[0]; if (!latest) return; setBusy(true); onError(null);
+        try {
+            const file = await attachDesignFile(latest.id, fileID, fileRole);
+            setVersionsByPart((current) => ({...current, [latest.catalog_part_id]: (current[latest.catalog_part_id] ?? []).map((version) => version.id === latest.id ? {...version, files: [...version.files, file]} : version)}));
+            setFileID('');
+        } catch (error: unknown) { onError(messageFrom(error)); } finally { setBusy(false); }
+    }
+
+    return <section className="design-history" aria-labelledby="design-history-title">
+        <div className="design-history__heading"><div><h3 id="design-history-title">Partes e designs</h3><p>VersÃµes preservam a procedÃªncia e os arquivos usados.</p></div></div>
+        {item.sellable && hasDenied && <p className="feedback feedback--error" role="status"><strong>Venda nÃ£o autorizada.</strong> A versÃ£o atual de ao menos uma parte nega uso comercial. O aviso nÃ£o bloqueia uso interno ou protÃ³tipos.</p>}
+        {item.sellable && !hasDenied && hasUnknown && <p className="feedback feedback--warning" role="status"><strong>PermissÃ£o comercial desconhecida.</strong> Cadastre a licenÃ§a de todas as partes antes de vender. Uso interno ou de protÃ³tipo continua permitido.</p>}
+        <div className="design-history__parts">
+            {parts.map((part) => <button key={part.id} type="button" className={part.id === selectedPartID ? 'design-tab design-tab--selected' : 'design-tab'} onClick={() => setSelectedPartID(part.id)}>{part.name} <small>Ã—{part.quantity}</small></button>)}
+        </div>
+        {canWrite && <form className="design-inline-form" onSubmit={addPart}>
+            <label>Nova parte<input required maxLength={200} value={partName} disabled={busy} onChange={(event) => setPartName(event.target.value)} /></label>
+            <label>Quantidade<input required min={1} type="number" value={partQuantity} disabled={busy} onChange={(event) => setPartQuantity(Number(event.target.value))} /></label>
+            <button className="button button--secondary" disabled={busy} type="submit">Adicionar parte</button>
+        </form>}
+        {selectedPart && <div className="design-versions">
+            <h4>HistÃ³rico de {selectedPart.name}</h4>
+            {versions.length === 0 && <p>Nenhuma versÃ£o cadastrada.</p>}
+            {versions.map((version) => <article className="design-version" key={version.id}>
+                <div><strong>{version.version}</strong><span>{originLabels[version.origin]}</span></div>
+                <p>{version.license_name || 'LicenÃ§a nÃ£o informada'} Â· {version.commercial_use_allowed == null ? 'uso comercial desconhecido' : version.commercial_use_allowed ? 'uso comercial permitido' : 'uso comercial negado'}</p>
+                {version.source_url && <a href={version.source_url} target="_blank" rel="noreferrer">Abrir origem</a>}
+                <ul>{version.files.map((file) => <li key={`${file.file_id}-${file.role}`}><span>{fileRoleLabels[file.role]}</span> {file.original_name}{file.role === 'print' && <strong> Â· arquivo de impressÃ£o</strong>}</li>)}</ul>
+            </article>)}
+            {canWrite && <>
+                <form className="catalog-form design-version-form" onSubmit={addVersion}>
+                    <h4>Nova versÃ£o imutÃ¡vel</h4>
+                    <div className="catalog-form__row"><label>VersÃ£o<input required maxLength={100} value={versionDraft.version} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, version: event.target.value})} /></label><label>Origem<select value={versionDraft.origin} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, origin: event.target.value as DesignOrigin})}>{Object.entries(originLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>
+                    <label>URL de origem<input type="url" value={versionDraft.sourceURL} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, sourceURL: event.target.value})} /></label>
+                    <div className="catalog-form__row"><label>Autor original<input maxLength={200} value={versionDraft.originalAuthor} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, originalAuthor: event.target.value})} /></label><label>LicenÃ§a<input maxLength={200} value={versionDraft.licenseName} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, licenseName: event.target.value})} /></label></div>
+                    <label>Uso comercial<select value={versionDraft.commercialPermission} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, commercialPermission: event.target.value as VersionDraft['commercialPermission']})}><option value="unknown">Desconhecido</option><option value="allowed">Permitido</option><option value="denied">Negado</option></select></label>
+                    <label className="catalog-form__checkbox"><input type="checkbox" checked={versionDraft.attributionRequired} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, attributionRequired: event.target.checked})} />Exige atribuiÃ§Ã£o</label>
+                    {versionDraft.attributionRequired && <label>Texto de atribuiÃ§Ã£o<input required maxLength={4000} value={versionDraft.attributionText} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, attributionText: event.target.value})} /></label>}
+                    <label>Notas<textarea maxLength={10000} value={versionDraft.notes} disabled={busy} onChange={(event) => setVersionDraft({...versionDraft, notes: event.target.value})} /></label>
+                    <button className="button button--primary" disabled={busy} type="submit">Criar versÃ£o</button>
+                </form>
+                {versions[0] && <form className="design-inline-form" onSubmit={linkFile}>
+                    <label>ID de arquivo existente<input required value={fileID} disabled={busy} onChange={(event) => setFileID(event.target.value)} /></label>
+                    <label>FunÃ§Ã£o<select value={fileRole} disabled={busy} onChange={(event) => setFileRole(event.target.value as DesignFileRole)}>{Object.entries(fileRoleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+                    <button className="button button--secondary" disabled={busy} type="submit">Vincular ao design atual</button>
+                </form>}
+            </>}
+        </div>}
+    </section>;
 }
 
 function CatalogForm({draft, setDraft, saving, isUpdate, onSubmit, onCancel}: {

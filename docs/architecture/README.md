@@ -9,6 +9,7 @@ Current documents:
 - [Roles and permission authorization](authorization.md)
 - [Immutable file storage contract](file-storage.md)
 - [Catalog items](catalog-items.md)
+- [Catalog parts and designs](catalog-designs.md)
 - [Desktop login](login.md)
 - [Desktop authentication boundary](desktop-authentication.md)
 - [Desktop permission-aware branded shell](desktop-shell.md)

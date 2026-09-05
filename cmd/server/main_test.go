@@ -43,6 +43,7 @@ var testWorkshopSettingsService = workshopSettingsServiceStub{}
 var testWorkshopLogoService = workshopLogoServiceStub{}
 var testFileTransferService = fileTransferServiceStub{}
 var testCatalogItemService = catalogItemServiceStub{}
+var testCatalogDesignService = catalogDesignServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -63,6 +64,7 @@ type workshopSettingsServiceStub struct{}
 type workshopLogoServiceStub struct{}
 type fileTransferServiceStub struct{}
 type catalogItemServiceStub struct{}
+type catalogDesignServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -332,6 +334,29 @@ func (catalogItemServiceStub) Delete(context.Context, string) error {
 	return nil
 }
 
+func (catalogDesignServiceStub) CreatePart(context.Context, string, domaincatalog.PartValues) (domaincatalog.Part, error) {
+	return domaincatalog.Part{}, nil
+}
+func (catalogDesignServiceStub) GetPart(context.Context, string) (domaincatalog.Part, error) {
+	return domaincatalog.Part{}, domaincatalog.ErrPartNotFound
+}
+func (catalogDesignServiceStub) ListParts(context.Context, string) ([]domaincatalog.Part, error) {
+	return []domaincatalog.Part{}, nil
+}
+func (catalogDesignServiceStub) UpdatePart(context.Context, string, domaincatalog.PartValues) (domaincatalog.Part, error) {
+	return domaincatalog.Part{}, nil
+}
+func (catalogDesignServiceStub) DeletePart(context.Context, string) error { return nil }
+func (catalogDesignServiceStub) CreateVersion(context.Context, string, string, domaincatalog.DesignVersionValues) (domaincatalog.DesignVersion, error) {
+	return domaincatalog.DesignVersion{}, nil
+}
+func (catalogDesignServiceStub) ListVersions(context.Context, string) ([]domaincatalog.DesignVersion, error) {
+	return []domaincatalog.DesignVersion{}, nil
+}
+func (catalogDesignServiceStub) AttachFile(context.Context, string, string, string, domaincatalog.DesignFileRole) (domaincatalog.DesignFile, error) {
+	return domaincatalog.DesignFile{}, nil
+}
+
 func TestHandlerRegistersFiles(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
 	request.Header.Set("Authorization", "Bearer test-token")
@@ -376,5 +401,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		testFileTransferService,
 		1024,
 		testCatalogItemService,
+		testCatalogDesignService,
 	)
 }

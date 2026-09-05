@@ -147,6 +147,8 @@ func RegisterCatalogItems(
 		switch {
 		case errors.Is(err, domaincatalog.ErrItemNotFound):
 			writeCatalogNotFound(response)
+		case errors.Is(err, domaincatalog.ErrDesignHistoryExists):
+			WriteError(response, http.StatusConflict, "design_history_exists", "Immutable design history prevents deletion", nil)
 		case err != nil:
 			WriteError(response, http.StatusInternalServerError, "internal_error", "Internal server error", nil)
 		default:
