@@ -9,8 +9,8 @@
 ## Reconciliation metadata
 
 ```yaml
-last_reconciled_commit: c7abe0c
-last_reconciled_at_utc: 2026-09-04T03:36:46Z
+last_reconciled_commit: b0ec097
+last_reconciled_at_utc: 2026-09-05T00:36:53Z
 reconciled_by: Codex
 ```
 
@@ -95,6 +95,7 @@ Tasks absent from this ledger are **unverified here**. Absence does not prove wh
 | ENERGY-001 | verified_complete | migration `00017_energy_measurements` + exact source-aware service/repository + secured Job API | a94f2aa | Meter deltas are derived exactly; direct and estimated evidence remain explicit with UTC recorder audit and immutable tariff snapshots. |
 | LABOR-001 | verified_complete | migration `00018_labor` + validated internal rate service/repository + `costing.read`/`costing.manage` routes | 6db1a00 | Named active rates retain activity and integer internal hourly cost only; no billable/customer price fields exist. |
 | LABOR-002 | verified_complete | immutable Job labor entry repository/API + PostgreSQL snapshot test + minute summary tests | 6db1a00 | Non-commercial Jobs accept positive time entries; activity and hourly rate are snapshotted, with total minutes grouped by activity. |
+| MAINT-001 | verified_complete | migration `00019_maintenance_events` + validated service/repository + secured printer history routes | 82b59b0 | Typed immutable history retains UTC performance time, creator, downtime, and optional exact printer hours/integer-cent cost without any printer control path. |
 | DESK-001 | verified_complete | pre-login React connection screen + validated user-scoped server configuration + Wails methods/tests | 769ea77 | Only a credential-free HTTP(S) base URL is stored; users can edit, test, and save it before login. |
 | DESK-002 | verified_complete | typed native meta client + error/timeout/compatibility tests + Wails production build | 769ea77 | Native Go owns HTTP and version checks; React has no server HTTP path and no business endpoint exists yet. |
 | DESK-003 | verified_complete | React login/error/shell flow + Wails Login binding + typed native login client/tests | 1c9e285 | Password is passed only to native Go; the Wails response never contains the bearer token. |
@@ -115,25 +116,17 @@ Do not paste large diffs or lengthy summaries into this table.
 
 ## Active Work Package
 
-```yaml
-id: WP-LABOR-01
-title: Internal Labor Time
-tasks: [LABOR-001, LABOR-002]
-branch: work/wp-labor-01-internal-time
-state: ready_for_pr
-pull_request: null
-```
+No new implementation Work Package is selected. The completed packages are
+listed below. PRs #32–#41 were verified merged into `main` on 2026-09-05 UTC;
+PR #31 is the final maintenance delivery and carries this integration record.
+When this revision is present on `main`, the full queue is integrated.
 
-Recommended `state` values:
-
-```text
-planned
-in_progress
-ready_for_pr
-in_review
-```
-
-After a package is merged and a later reconciliation confirms it on `main`, clear this section or replace it with the next package.
+See [the integration record](docs/pr-integration-queue.md) for task IDs,
+migration order, verified revisions, merge commits, and validation evidence.
+All ten predecessor merges used successful backend, desktop, and security
+checks; each retargeted diff remained scoped to its package. The final PR must
+also pass its checks before merging. No financial policy or schema change was
+introduced by this integration work.
 
 ---
 
@@ -141,16 +134,17 @@ After a package is merged and a later reconciliation confirms it on `main`, clea
 
 | Work Package | Tasks | Merge/commit | Notes |
 |---|---|---|---|
-| WP-LABOR-01 | LABOR-001, LABOR-002 | 6db1a00 (local, unpushed) | Internal-only labor rate configuration and immutable non-commercial-capable Job time entries with minute totals. |
-| WP-ENERGY-01 | ENERGY-001 | a94f2aa (local, unpushed) | Exact Job energy evidence with meter/direct/estimated sources, recorder audit, tariff snapshots, and secured API. |
-| WP-JOB-02 | JOB-003, JOB-004 | cd09805 (local, unpushed) | Exact per-Job spool usage, immutable cost snapshot fields, source-aware totals, secured CRUD API, and desktop workflow. |
-| WP-JOB-01 | JOB-001, JOB-002, JOB-005, JOB-006 | fb4b840 (local, unpushed) | Non-commercial-capable manual Job lifecycle, explicit quality review, and atomic append-only audit events. |
-| WP-PRN-01 | PRN-001 | 0319efb (local, unpushed) | Non-sensitive logical printer registry with exact costing inputs and secured CRUD API. |
-| WP-CAT-03 | BOM-001 | f09a8ad (local, unpushed) | Supply BOM CRUD and exact replacement-cost preview for commercial and internal catalog items. |
-| WP-INV-02 | INV-004, INV-005, INV-006 | 6579bdf (local, unpushed) | Supply CRUD, atomic auditable movements, explicit no-negative-stock policy, and derived low-inventory UI. |
-| WP-INV-01 | INV-001, INV-002, INV-003 | 7a8bc99 (local, unpushed) | Filament materials, physical spools, append-only weighing history, and permission-aware desktop workflow. |
-| WP-CAT-02 | CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009 | 6be2c77 (local, unpushed) | Immutable design history, file roles, provenance/license tracking, and advisory license UI. |
-| WP-CAT-01 | CAT-001, CAT-002, CAT-003 | f447cb5 (local, unpushed) | Catalog item API and permission-aware desktop vertical slice; publication intentionally deferred. |
+| WP-MAINT-01 | MAINT-001 | 2b47b1b (final delivery: PR [#31](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/31)) | Typed immutable printer maintenance history with optional exact lifetime hours/cost and secured API. |
+| WP-LABOR-01 | LABOR-001, LABOR-002 | 3192309 (PR [#41](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/41), merged) | Internal-only labor rate configuration and immutable non-commercial-capable Job time entries with minute totals. |
+| WP-ENERGY-01 | ENERGY-001 | 9b86292 (PR [#40](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/40), merged) | Exact Job energy evidence with meter/direct/estimated sources, recorder audit, tariff snapshots, and secured API. |
+| WP-JOB-02 | JOB-003, JOB-004 | d605e44 (PR [#39](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/39), merged) | Exact per-Job spool usage, immutable cost snapshot fields, source-aware totals, secured CRUD API, and desktop workflow. |
+| WP-JOB-01 | JOB-001, JOB-002, JOB-005, JOB-006 | 3446ab5 (PR [#38](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/38), merged) | Non-commercial-capable manual Job lifecycle, explicit quality review, and atomic append-only audit events. |
+| WP-PRN-01 | PRN-001 | 202fb97 (PR [#37](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/37), merged) | Non-sensitive logical printer registry with exact costing inputs and secured CRUD API. |
+| WP-CAT-03 | BOM-001 | 8ba4eb3 (PR [#36](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/36), merged) | Supply BOM CRUD and exact replacement-cost preview for commercial and internal catalog items. |
+| WP-INV-02 | INV-004, INV-005, INV-006 | a54eb7c (PR [#35](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/35), merged) | Supply CRUD, atomic auditable movements, explicit no-negative-stock policy, and derived low-inventory UI. |
+| WP-INV-01 | INV-001, INV-002, INV-003 | 20203ad (PR [#34](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/34), merged) | Filament materials, physical spools, append-only weighing history, and permission-aware desktop workflow. |
+| WP-CAT-02 | CAT-004, CAT-005, CAT-006, CAT-007, CAT-008, CAT-009 | 8926e95 (PR [#33](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/33), merged) | Immutable design history, file roles, provenance/license tracking, and advisory license UI. |
+| WP-CAT-01 | CAT-001, CAT-002, CAT-003 | cdea7fe (PR [#32](https://github.com/Wilian-N-Silva/talos-3d-workshop-management/pull/32), merged) | Catalog item API and permission-aware desktop vertical slice; PR registered in the dependency queue. |
 | WP-FILE-01 | FILE-002, FILE-003 | c7abe0c (PR #30) | Authorized immutable upload and download through server-controlled storage. |
 | WP-DESK-03 | DESK-005, DESK-006, DESK-007 | 6c19f41 (PR #29) | Permission-aware navigation, fixed theme policy, and workshop branding. |
 | WP-DESK-02 | DESK-003, DESK-004 | df61891 (PR #28) | Native login and Windows Credential Manager session persistence. |
@@ -170,6 +164,7 @@ Keep this section lightweight. Older detail remains available through Git histor
 |---|---|---|---|
 | FUP-CFG-001 | reconciliation at 55e19a9 | Direct `go run` listener ignores `TALOS_SERVER_BIND_ADDRESS`/`TALOS_TRUSTED_LAN` and binds all interfaces; align listener policy with trusted-LAN security docs. | Future configuration/security Work Package; not expanded into authentication packages. |
 | FUP-DESK-001 | WP-DESK-02 at 1c9e285 | Desktop login does not yet persist/reuse the server-issued client device ID after local logout, so a later login registers another audit device. | Address with device/session management UI; no session-security weakening in this package. |
+| FUP-FIN-001 | reconciliation at f1583de | PRD section 38 requires `ADR-FIN-001`, but no rounding ADR exists. | Resolve/document the rounding decision when selecting COST-001; no financial policy introduced by maintenance work. |
 
 Use this only for concrete follow-up work discovered during implementation/reconciliation. Do not turn it into a second product backlog.
 

@@ -50,6 +50,7 @@ func TestUserRoleMigrationBackfillsExistingUsersAgainstPostgreSQL(t *testing.T) 
 	})
 
 	for _, statement := range []string{
+		"DROP TABLE IF EXISTS maintenance_events",
 		"DROP TABLE IF EXISTS job_labor_entries",
 		"DROP TABLE IF EXISTS labor_rates",
 		"DROP TABLE IF EXISTS energy_measurements",
@@ -154,6 +155,9 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 		}
 	})
 
+	if _, err := database.ExecContext(ctx, "DROP TABLE IF EXISTS maintenance_events"); err != nil {
+		t.Fatalf("reset maintenance events schema: %v", err)
+	}
 	if _, err := database.ExecContext(ctx, "DROP TABLE IF EXISTS job_labor_entries"); err != nil {
 		t.Fatalf("reset job labor entries schema: %v", err)
 	}
@@ -232,14 +236,14 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetMigrationState() before migrate error = %v", err)
 	}
-	if state.CurrentVersion != 0 || state.TargetVersion != 18 || !state.HasPending {
-		t.Fatalf("state before migrate = %+v, want current 0, target 18, pending", state)
+	if state.CurrentVersion != 0 || state.TargetVersion != 19 || !state.HasPending {
+		t.Fatalf("state before migrate = %+v, want current 0, target 19, pending", state)
 	}
 
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate() error = %v", err)
 	}
-	assertMigrationState(t, ctx, database, 18, 18, false)
+	assertMigrationState(t, ctx, database, 19, 19, false)
 
 	results := make(chan error, 2)
 	for range 2 {
@@ -325,6 +329,10 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read labor migration: %v", err)
 	}
+	maintenanceEvents, err := fs.ReadFile(migrationfiles.Files, "00019_maintenance_events.sql")
+	if err != nil {
+		t.Fatalf("read maintenance events migration: %v", err)
+	}
 	failingMigrations := fstest.MapFS{
 		"00001_bootstrap.sql":           {Data: bootstrap},
 		"00002_users.sql":               {Data: users},
@@ -344,14 +352,15 @@ func TestMigrationLifecycleAgainstPostgreSQL(t *testing.T) {
 		"00016_job_material_usage.sql":  {Data: jobMaterialUsage},
 		"00017_energy_measurements.sql": {Data: energyMeasurements},
 		"00018_labor.sql":               {Data: labor},
-		"00019_failure.sql": {
+		"00019_maintenance_events.sql":  {Data: maintenanceEvents},
+		"00020_failure.sql": {
 			Data: []byte("-- +goose Up\nSELECT * FROM table_that_does_not_exist;\n"),
 		},
 	}
 	if err := migrate(ctx, database, failingMigrations); err == nil {
 		t.Fatal("migrate() error = nil, want failing migration error")
 	}
-	assertMigrationState(t, ctx, database, 18, 18, false)
+	assertMigrationState(t, ctx, database, 19, 19, false)
 }
 
 func assertMigrationState(t *testing.T, ctx context.Context, database *sql.DB, current, target int64, pending bool) {

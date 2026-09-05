@@ -24,6 +24,7 @@ import (
 	domaininventory "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/inventory"
 	domainjobs "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/jobs"
 	domainlabor "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/labor"
+	domainmaintenance "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/maintenance"
 	domainprinters "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/printers"
 	domainsettings "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/settings"
 	httpplatform "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/platform/http"
@@ -57,6 +58,7 @@ var testJobService = jobServiceStub{}
 var testJobMaterialUsageService = jobMaterialUsageServiceStub{}
 var testEnergyService = energyServiceStub{}
 var testLaborService = laborServiceStub{}
+var testMaintenanceService = maintenanceServiceStub{}
 
 func (stub readinessStub) Check(context.Context) error {
 	return stub.err
@@ -86,6 +88,7 @@ type jobServiceStub struct{}
 type jobMaterialUsageServiceStub struct{}
 type energyServiceStub struct{}
 type laborServiceStub struct{}
+type maintenanceServiceStub struct{}
 
 func (loginServiceStub) Login(
 	context.Context,
@@ -511,6 +514,12 @@ func (laborServiceStub) CreateEntry(context.Context, string, string, domainlabor
 func (laborServiceStub) ListEntries(context.Context, string) (domainlabor.Summary, error) {
 	return domainlabor.Summary{Items: []domainlabor.Entry{}, MinutesByActivity: map[domainlabor.ActivityType]int64{}}, nil
 }
+func (maintenanceServiceStub) Create(context.Context, string, string, domainmaintenance.Values) (domainmaintenance.Event, error) {
+	return domainmaintenance.Event{}, nil
+}
+func (maintenanceServiceStub) List(context.Context, string) ([]domainmaintenance.Event, error) {
+	return []domainmaintenance.Event{}, nil
+}
 
 func TestHandlerRegistersFiles(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, httpplatform.APIV1Prefix+httpplatform.FilesPath+"/11111111-1111-4111-8111-111111111111", nil)
@@ -635,5 +644,6 @@ func newTestHandler(t *testing.T, readiness httpplatform.ReadinessChecker) http.
 		testJobMaterialUsageService,
 		testEnergyService,
 		testLaborService,
+		testMaintenanceService,
 	)
 }

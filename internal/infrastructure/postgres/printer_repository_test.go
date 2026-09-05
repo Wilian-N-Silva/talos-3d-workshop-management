@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	domainmaintenance "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/maintenance"
 	domain "github.com/Wilian-N-Silva/talos-3d-workshop-management/internal/domain/printers"
 )
 
@@ -21,13 +22,13 @@ func TestPrinterRepositoryAgainstPostgreSQL(t *testing.T) {
 		t.Fatalf("Open()=%v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, printers")
+		_, _ = database.ExecContext(ctx, "TRUNCATE TABLE maintenance_events, job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, printers")
 		_ = database.Close()
 	})
 	if err := Migrate(ctx, database); err != nil {
 		t.Fatalf("Migrate()=%v", err)
 	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, printers"); err != nil {
+	if _, err := database.ExecContext(ctx, "TRUNCATE TABLE maintenance_events, job_labor_entries, labor_rates, energy_measurements, print_job_material_usage, job_events, print_jobs, printers"); err != nil {
 		t.Fatalf("truncate=%v", err)
 	}
 	now := time.Date(2026, 9, 4, 20, 0, 0, 0, time.UTC)
@@ -55,5 +56,44 @@ func TestPrinterRepositoryAgainstPostgreSQL(t *testing.T) {
 	}
 	if _, err := repository.FindByID(ctx, created.ID); !errors.Is(err, domain.ErrPrinterNotFound) {
 		t.Fatalf("FindByID(deleted)=%v", err)
+	}
+	values.Name = "A1 Maintenance"
+	maintainedPrinter, err := repository.Create(ctx, values, now)
+	if err != nil {
+		t.Fatalf("create maintained printer=%v", err)
+	}
+	var userID string
+	if err := database.QueryRowContext(ctx, "INSERT INTO users(name,email_or_username,password_hash,status,role) VALUES('Maintenance Owner',$1,'$argon2id$test','active','owner') RETURNING id", "maintenance-owner-"+maintainedPrinter.ID).Scan(&userID); err != nil {
+		t.Fatalf("create maintenance user=%v", err)
+	}
+	hours, cost := "1250.5", int64(4500)
+	maintenanceRepository := NewMaintenanceRepository(database)
+	event, err := maintenanceRepository.Create(ctx, maintainedPrinter.ID, userID, domainmaintenance.Values{Type: domainmaintenance.TypePreventive, PerformedAt: now, PrinterHours: &hours, Description: "Lubricate axes", CostCents: &cost, DowntimeMinutes: 30}, now)
+	if err != nil || event.PrinterHours == nil || *event.PrinterHours != hours || event.CostCents == nil || *event.CostCents != cost || event.CreatedBy != userID {
+		t.Fatalf("Create maintenance=%#v,%v", event, err)
+	}
+	events, err := maintenanceRepository.List(ctx, maintainedPrinter.ID)
+	if err != nil || len(events) != 1 || events[0].Type != domainmaintenance.TypePreventive {
+		t.Fatalf("List maintenance=%#v,%v", events, err)
+	}
+	// Recording another event must retain the previous values and keep absent
+	// observations distinct from zero. History follows performance time.
+	later, err := maintenanceRepository.Create(ctx, maintainedPrinter.ID, userID, domainmaintenance.Values{Type: domainmaintenance.TypeInspection, PerformedAt: now.Add(time.Hour), Description: "Inspect axes"}, now.Add(2*time.Hour))
+	if err != nil || later.PrinterHours != nil || later.CostCents != nil {
+		t.Fatalf("Create optional maintenance=%#v,%v", later, err)
+	}
+	events, err = maintenanceRepository.List(ctx, maintainedPrinter.ID)
+	if err != nil || len(events) != 2 || events[0].ID != later.ID || events[1].ID != event.ID || events[1].CostCents == nil || *events[1].CostCents != cost {
+		t.Fatalf("ordered immutable history=%#v,%v", events, err)
+	}
+	if err := repository.Delete(ctx, maintainedPrinter.ID); err == nil {
+		t.Fatal("deleting a printer with maintenance history succeeded")
+	}
+	const missingID = "11111111-1111-4111-8111-111111111111"
+	if _, err := maintenanceRepository.List(ctx, missingID); !errors.Is(err, domain.ErrPrinterNotFound) {
+		t.Fatalf("missing printer history error=%v", err)
+	}
+	if _, err := maintenanceRepository.Create(ctx, maintainedPrinter.ID, missingID, domainmaintenance.Values{Type: domainmaintenance.TypeInspection, PerformedAt: now, Description: "Invalid actor"}, now); !errors.Is(err, domainmaintenance.ErrMaintenanceReference) {
+		t.Fatalf("missing actor error=%v", err)
 	}
 }
